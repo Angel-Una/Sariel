@@ -43,3 +43,113 @@ html.ios-lite [class*="shine"],
 html.ios-lite [class*="sparkle"] {
   animation: none !important;
 }
+
+/* ===== 全机型滚动性能优化（不依赖 ios-lite/low-mem 标记） =====
+   真机上"一滑一顿"的主因是滚动内容里大量 backdrop-filter 每帧重新采样。 */
+
+/* 1) 聊天消息气泡：列表里重复几十层，气泡本身有不透明底色，关掉毛玻璃视觉几乎无变化 */
+html body #chatBody .msg-row:not(.system) .bubble,
+html body #chatBody .msg-row:not(.system) .bubble::before,
+html body #chatBody .msg-row:not(.system) .bubble::after,
+html body #companionMsgs .msg-row:not(.system) .bubble,
+html body #watchChatBody .msg-row:not(.system) .bubble {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 2) 第一屏磨砂文字卡：设计本就是"80% 白底渐隐融入壁纸"，不需要实时模糊 */
+html body .s1-frosted-content {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: linear-gradient(to bottom, rgba(255,255,255,1) 0%, rgba(255,255,255,1) 42%, rgba(255,255,255,0.75) 58%, rgba(255,255,255,0.75) 66%, rgba(255,255,255,0.3) 86%, rgba(255,255,255,0) 100%) !important;
+  box-shadow: none !important;
+}
+
+/* 3) 固定输入栏/按钮：毛玻璃半径 20~28px → 14px，GPU 采样成本明显下降 */
+html body #app-chat .chat-input-bar .input-wrap,
+html body .chat-input-bar .input-wrap {
+  -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
+  backdrop-filter: blur(14px) saturate(160%) !important;
+}
+html body #app-chat .chat-input-bar #plusMenuBtn,
+html body #app-chat .chat-input-bar #sendBtn,
+html body #app-chat .chat-top-bar #chatBackBtn,
+html body #app-chat .chat-top-bar #chatCallBtn,
+html body #app-chat .chat-top-bar .ta-name-pill {
+  -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
+  backdrop-filter: blur(12px) saturate(160%) !important;
+}
+html body #emojiPanel,
+html body .emoji-panel,
+html body .plus-menu#plusMenu,
+html body .plus-menu-sheet {
+  -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
+  backdrop-filter: blur(14px) saturate(160%) !important;
+}
+
+/* 4) 聊天顶栏 5 层渐进模糊：每层都是一次独立 GPU blur，保留前 2 层即可 */
+html body .chat-top-bar-blur .chat-blur-l3,
+html body .chat-top-bar-blur .chat-blur-l4,
+html body .chat-top-bar-blur .chat-blur-l5 {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 5) 滚动列表里"每条消息都一份"的其它毛玻璃：时间戳胶囊、系统消息气泡。
+   这两类在聊天记录里同样会重复几十次，是气泡之外最大的滚动开销。 */
+html body #chatBody .timestamp-row::before,
+html body #companionMsgs .timestamp-row::before,
+html body #watchChatBody .timestamp-row::before,
+html body #chatBody .msg-row.system .bubble,
+html body #companionMsgs .msg-row.system .bubble,
+html body #watchChatBody .msg-row.system .bubble {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 6) 首页底部渐隐层：整块 200px 高的实时高斯模糊，滚动时每帧重采样；
+   它本身已有 95% 白色渐变，去掉模糊肉眼几乎无差别。 */
+html body .s1-overlay {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 7) 滚动容器：命中测试与重绘隔离，避免整页重排；抑制滚动链回弹引发的整页抖动 */
+html body .home-screen,
+html body #chatBody,
+html body #chatListContent,
+html body #friendsBody,
+html body #companionMsgs,
+html body #watchChatBody {
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
+}
+
+/* 8) 主样式表给聊天滚动容器加了 will-change:scroll-position。
+   长列表下浏览器会常驻一整块滚动缓冲层，滑动时不断重建，
+   是新版 Chrome/Safari 上"一滑一顿"的典型来源，这里改回自动。 */
+html body #app-chat .chat-body,
+html body #chatBody,
+html body .chat-body {
+  will-change: auto !important;
+}
+
+/* 9) 输入栏整条底座的 20px 实时模糊（滚动时每帧重采样）降到 12px */
+html body #app-chat .chat-input-bar-area,
+html body .chat-input-bar-area {
+  -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
+  backdrop-filter: blur(12px) saturate(160%) !important;
+}
+
+/* 10) 首页壁纸最终渲染层。
+   主样式表里 #phoneFrame 有 `background:0 0 !important` 简写、`.phone-frame` 有
+   `background-image:none !important`，会把运行时可写的内联 background-image 整体吃掉，
+   表现为"设置时能看到，刷新后壁纸消失"。这里用后加载 + 更高优先级 + CSS 变量统一渲染。 */
+html body #phoneFrame,
+html body .phone-frame#phoneFrame {
+  background-image: var(--akini-home-bg, none) !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+}
+

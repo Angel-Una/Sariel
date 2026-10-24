@@ -150,7 +150,8 @@ document.addEventListener("click", function(e) {
   if (homeBtn) {
     e.preventDefault();
     window.triggerPickImage("akini_home_bg", function(dataUrl) {
-      try { localStorage.setItem("akini_home_bg", dataUrl); } catch(ex) {}
+      if (window.__akiniSaveImageKey) window.__akiniSaveImageKey("akini_home_bg", dataUrl);
+      else { try { localStorage.setItem("akini_home_bg", dataUrl); } catch(ex) {} }
       if (window.applyAkiniHomeBg) { window.applyAkiniHomeBg(dataUrl); return; }
       var el = document.getElementById("phoneFrame");
       if (el) el.style.setProperty('background-image', 'url("' + dataUrl + '")', 'important');
@@ -162,6 +163,8 @@ document.addEventListener("click", function(e) {
   if (friendsBtn) {
     e.preventDefault();
     window.triggerPickImage("akini_friends_bg", function(dataUrl) {
+      if (window.__akiniSaveImageKey) window.__akiniSaveImageKey("akini_friends_bg", dataUrl);
+      else { try { localStorage.setItem("akini_friends_bg", dataUrl); } catch(ex) {} }
       var el = document.getElementById("friendsHeader");
       if (el) el.style.setProperty('background-image', 'url("' + dataUrl + '")', 'important');
     });
@@ -212,7 +215,8 @@ window.triggerPickImage = function(targetKey, callback) {
     reader.onload = function(evt) {
       window.compressImageDataUrl(evt.target.result, function(compressed) {
         if (targetKey) {
-          try { localStorage.setItem(targetKey, compressed); } catch(ex){}
+          if (window.__akiniSaveImageKey) window.__akiniSaveImageKey(targetKey, compressed);
+          else { try { localStorage.setItem(targetKey, compressed); } catch(ex){} }
         }
         if (callback) callback(compressed);
       });

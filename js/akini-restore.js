@@ -22,17 +22,69 @@
     el.setAttribute('data-avatar-applied', url);
   }
 
+  function applyHomeBg(url) {
+    if (!url || typeof url !== 'string' || url.length <= 10) return;
+    /* 同步写 CSS 变量：主样式表的 background 简写 !important 会覆盖非important内联，
+       由 perf-lite.css 末尾的高优先级规则统一渲染。 */
+    try { document.documentElement.style.setProperty('--akini-home-bg', 'url("' + url + '")'); } catch(e) {}
+    var pf = document.getElementById('phoneFrame');
+    if (!pf) return;
+    pf.style.setProperty('background-image', 'url("' + url + '")', 'important');
+    pf.style.setProperty('background-size', 'cover', 'important');
+    pf.style.setProperty('background-position', 'center', 'important');
+    pf.style.setProperty('background-repeat', 'no-repeat', 'important');
+    pf.classList.add('has-custom-bg');
+  }
+
+  /* 壁纸兜底恢复：localStorage 配额满时壁纸只存在 IndexedDB/localforage 里，
+     此时同步读 localStorage 是空的，刷新后必须先异步取回再上墙。 */
+  function restoreHomeBgAsync() {
+    var ls = null;
+    try { ls = localStorage.getItem('akini_home_bg') || localStorage.getItem('home_bg'); } catch(e) {}
+    if (ls && ls.length > 10) { applyHomeBg(ls); return; }
+    var settled = false;
+    function done(v) {
+      if (settled) return;
+      if (!v || typeof v !== 'string' || v.length <= 10) return;
+      settled = true;
+      applyHomeBg(v);
+      try { localStorage.setItem('akini_home_bg', v); } catch(e) {}
+      try { if (window.__akiniImgCache) window.__akiniImgCache['akini_home_bg'] = v; } catch(e) {}
+    }
+    try {
+      var mem = window.akiniStore && window.akiniStore.memoryGet ? window.akiniStore.memoryGet('akini_home_bg') : null;
+      if (mem && mem.length > 10) { done(mem); return; }
+    } catch(e) {}
+    /* 壁纸真正落盘的位置是 _idbStore（localforage 实例 AkiniApp / akini_data）。
+       之前先读全局 localforage（默认实例，库名不同）取不到值就直接 return，
+       导致刷新后壁纸丢失。这里先读主存储，再兜底读快照与全局 localforage。 */
+    var fromLocalforage = function() {
+      try {
+        if (window.localforage && localforage.getItem) localforage.getItem('akini_home_bg').then(done).catch(function(){});
+      } catch(e) {}
+    };
+    try {
+      if (window._idbStore && window._idbStore.get) {
+        window._idbStore.get('akini_home_bg', function(v) {
+          if (v && String(v).length > 10) { done(v); return; }
+          try {
+            window._idbStore.get('snap_akini_home_bg', function(sv) {
+              if (sv && String(sv).length > 10) { done(sv); return; }
+              fromLocalforage();
+            });
+          } catch(e) { fromLocalforage(); }
+        });
+        return;
+      }
+    } catch(e) {}
+    fromLocalforage();
+  }
+
   function restoreAllImagesAndConfig() {
     try {
       var homeBg = localStorage.getItem('akini_home_bg') || localStorage.getItem('home_bg');
-      if (homeBg && homeBg.length > 10) {
-        var pf = document.getElementById('phoneFrame');
-        if (pf) {
-          pf.style.setProperty('background-image', 'url("' + homeBg + '")', 'important');
-          pf.style.setProperty('background-size', 'cover', 'important');
-          pf.style.setProperty('background-position', 'center', 'important');
-        }
-      }
+      applyHomeBg(homeBg);
+      restoreHomeBgAsync();
       var s1Av = localStorage.getItem('akini_s1_avatar') || localStorage.getItem('akini_my_avatar') || localStorage.getItem('akini_avatar_left');
       if (s1Av && s1Av.length > 10) {
         var elS1Av = document.getElementById('s1AvatarImg');
@@ -60,6 +112,62 @@
   }
   scheduleRestore();
   window.addEventListener('load', restoreAllImagesAndConfig);
+  /* 图片键从 IndexedDB 回填完成后（可能晚于首屏），再补一次壁纸/头像恢复 */
+  window.addEventListener('akini-img-ready', function(){ try { restoreAllImagesAndConfig(); } catch(e) {} });
+
+  /* core 的 ct("akini_home_bg") 会在启动后异步再写一次 background-image，
+     而且不带 !important，会把上面恢复的壁纸覆盖成不生效的内联声明。
+     这里在启动期补几次，只在内联优先级丢失时重设。 */
+  function reapplyHomeBg() {
+    try {
+      var v = localStorage.getItem('akini_home_bg') || localStorage.getItem('home_bg');
+      if (!v || v.length <= 10) return;
+      var pf = document.getElementById('phoneFrame');
+      if (!pf) return;
+      if (pf.style.getPropertyPriority('background-image') === 'important') return;
+      applyHomeBg(v);
+    } catch(e) {}
+  }
+  [300, 800, 1600, 3200].forEach(function(ms){ setTimeout(reapplyHomeBg, ms); });
+
+  /* 清除壁纸：localStorage.removeItem 被全局拦截器挡住，这里用白名单标记真正删除，
+     同时清掉 CSS 变量与 IndexedDB 镜像，避免刷新后壁纸"复活"。 */
+  document.addEventListener('click', function(e) {
+    var t = e.target;
+    var btn = t && t.closest ? t.closest('#clearHomeBgBtn') : null;
+    if (!btn) return;
+    try { document.documentElement.style.removeProperty('--akini-home-bg'); } catch(e1) {}
+    try {
+      window._akiniAllowRemove = true;
+      localStorage.removeItem('akini_home_bg');
+      localStorage.removeItem('home_bg');
+      /* 快照/备份键同样带 akini_ 前缀，必须在白名单窗口内删除 */
+      localStorage.removeItem('snap_akini_home_bg');
+      localStorage.removeItem('snap2_akini_home_bg');
+      localStorage.removeItem('akini_home_bg_ok');
+      localStorage.removeItem('akini_localstorage_snapshot');
+      localStorage.removeItem('akini_localstorage_snapshot_backup');
+      localStorage.removeItem('akini_idb_full_snapshot');
+      window._akiniAllowRemove = false;
+    } catch(e2) { window._akiniAllowRemove = false; }
+    try { if (window.__akiniImgCache) delete window.__akiniImgCache['akini_home_bg']; } catch(e3) {}
+    try { if (window.akiniStore && window.akiniStore.memorySet) window.akiniStore.memorySet('akini_home_bg', ''); } catch(e3b) {}
+    try { if (window.localforage && localforage.removeItem) localforage.removeItem('akini_home_bg').catch(function(){}); } catch(e3c) {}
+    try {
+      if (window._idbStore && window._idbStore.remove) {
+        window._idbStore.remove('akini_home_bg');
+        window._idbStore.remove('snap_akini_home_bg');
+        window._idbStore.remove('snap2_akini_home_bg');
+        window._idbStore.remove('akini_localstorage_snapshot');
+        window._idbStore.remove('akini_localstorage_snapshot_backup');
+        window._idbStore.remove('akini_idb_full_snapshot');
+      }
+    } catch(e4) {}
+    try {
+      var pf = document.getElementById('phoneFrame');
+      if (pf) { pf.style.setProperty('background-image', 'none', 'important'); pf.classList.remove('has-custom-bg'); }
+    } catch(e5) {}
+  }, true);
 })();
 
 ;
