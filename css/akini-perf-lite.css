@@ -184,7 +184,7 @@ html body #watchChatBody#watchChatBody .msg-row.me .bubble[data-mb]::after {
   display: block !important;
   width: auto !important;
   height: auto !important;
-  max-width: 96px !important;
+  max-width: 10em !important;
   position: absolute !important;
   left: -5px !important;
   right: auto !important;
@@ -196,6 +196,8 @@ html body #watchChatBody#watchChatBody .msg-row.me .bubble[data-mb]::after {
   background-color: #fff !important;
   border: 1.5px solid #000 !important;
   color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+  text-shadow: none !important;
   font-size: 10px !important;
   line-height: 15px !important;
   font-weight: 500 !important;
@@ -216,7 +218,7 @@ html body #watchChatBody#watchChatBody .msg-row.ta .bubble[data-mb]::after {
   display: block !important;
   width: auto !important;
   height: auto !important;
-  max-width: 96px !important;
+  max-width: 10em !important;
   position: absolute !important;
   left: auto !important;
   right: -5px !important;
@@ -228,6 +230,8 @@ html body #watchChatBody#watchChatBody .msg-row.ta .bubble[data-mb]::after {
   background-color: #fff !important;
   border: 1.5px solid #000 !important;
   color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+  text-shadow: none !important;
   font-size: 10px !important;
   line-height: 15px !important;
   font-weight: 500 !important;

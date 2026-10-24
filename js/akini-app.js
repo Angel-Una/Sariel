@@ -76,15 +76,34 @@
   }catch(e){}
 })();
 /* ===== 防止联系人莫名主动发消息：
-   1) 清掉 akini_pending_reply_v1（core 回复后不会清此键，页面加载时会恢复待回复队列
-      并自动触发回复，造成"我没发消息却收到回复"；需绕过 storage 的删除保护）；
-   2) 确保 contactActiveMsgToggle 未显式开启时为关，杜绝主动消息引擎自启。 ===== */
+   1) 清掉 akini_pending_reply_v1（localStorage + IndexedDB 两份都要清，
+      core 的 F() 会先读 localStorage，没有再回退 IDB 恢复待回复队列，
+      自动触发回复，造成"我没发消息却收到回复"）；
+   2) 清掉内存里的 __akiniPendingReplyMap，避免已加载的队列继续触发；
+   3) 确保 contactActiveMsgToggle 未显式开启时为关，杜绝主动消息引擎自启。 ===== */
 (function(){
   try{
     window._akiniAllowRemove = true;
     localStorage.removeItem("akini_pending_reply_v1");
+    localStorage.removeItem("akini_pending_reply");
   }catch(e){}
   finally{ try{ window._akiniAllowRemove = false; }catch(e){} }
+  try{
+    if(window._idbStore){
+      try{ window._idbStore.remove("akini_pending_reply_v1"); }catch(e){}
+      try{ window._idbStore.remove("akini_pending_reply"); }catch(e){}
+    }
+  }catch(e){}
+  try{
+    if(window.__akiniPendingReplyMap){
+      Object.keys(window.__akiniPendingReplyMap).forEach(function(k){
+        delete window.__akiniPendingReplyMap[k];
+      });
+    }
+  }catch(e){}
+  try{
+    if(window.__activeMsgTimer){ clearTimeout(window.__activeMsgTimer); window.__activeMsgTimer = null; }
+  }catch(e){}
   try{
     var v = localStorage.getItem("akini_toggle_contactActiveMsgToggle");
     if(v !== "1") localStorage.setItem("akini_toggle_contactActiveMsgToggle", "0");
@@ -1005,7 +1024,7 @@ window.__akiniNowTs = function () {
         var on2 = String(_srvFilterGid) === String(gid);
         return '<button type="button" class="wb-srv-chip wb-gf-btn' + (on2 ? ' active' : '') + '" data-gid="' + gid + '" style="flex-shrink:0;-webkit-tap-highlight-color:transparent;">' + label + (count != null ? '(' + count + ')' : '') + '</button>';
       };
-      h += '<div style="display:flex;gap:6px;overflow-x:auto;margin:8px 16px 0;padding:5px;background:#f5f5f5;border-radius:14px;-webkit-overflow-scrolling:touch;box-sizing:border-box;flex-shrink:0;min-height:40px;">';
+      h += '<div style="display:flex;gap:6px;overflow-x:auto;margin:8px 16px 0;padding:5px;background:transparent;border-radius:14px;-webkit-overflow-scrolling:touch;box-sizing:border-box;flex-shrink:0;min-height:40px;">';
       h += chip('', '全部', null);
       h += chip('__ungrouped__', '未分组', validList.filter(function (x) { return !x.g; }).length);
       groups.forEach(function (g) {
@@ -1028,7 +1047,7 @@ window.__akiniNowTs = function () {
       return true;
     });
 
-    h += '<div style="padding:14px 16px;background:#f7f7f7;min-height:220px;width:100%;box-sizing:border-box;flex:1 1 auto;overflow-y:auto;">';
+    h += '<div style="padding:14px 16px;background:#fff;min-height:220px;width:100%;box-sizing:border-box;flex:1 1 auto;overflow-y:auto;">';
     if (!shown.length) {
       h += '<div style="text-align:center;color:#999;padding:48px 16px;font-size:14px;line-height:1.8;background:#fff;border-radius:12px;border:1px dashed #e0e0e0;">' +
         (validList.length ? '没有匹配的问卷' : ('「' + curName.replace(/</g, "&lt;") + '」还没有专属问卷<br/><span style="font-size:12px;color:#aaa;">点击右上角「+ 新增」为 TA 创建专属问卷</span>')) +
