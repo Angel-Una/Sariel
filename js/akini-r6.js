@@ -1,4 +1,4 @@
-/* ===== Round 6 features: music home, companion home, histories, invite/end cards, contact skip ===== */
+/* ===== Round 6/7 features: music/companion home, histories, invite/end cards, contact skip, probabilities ===== */
 (function () {
   'use strict';
 
@@ -26,6 +26,17 @@
     try { return localStorage.getItem('akini_my_name') || '我'; } catch (e) { return '我'; }
   }
 
+  /* ============ PROBABILITIES (可在设置自定义) ============ */
+  function getProb(key, def) {
+    try {
+      var v = parseFloat(localStorage.getItem(key));
+      if (!isNaN(v) && v >= 0 && v <= 100) return v;
+    } catch (e) {}
+    return def;
+  }
+  function getInviteProb() { return getProb('akini_prob_invite', 10); }
+  function getSkipProb() { return getProb('akini_prob_skip', 5); }
+
   /* ============ MUSIC HOME PAGE ============ */
   function showMusicHome() {
     var ov = $('musicHomeOverlay');
@@ -33,16 +44,18 @@
     var myAv = getMyAvatar();
     var ta = getDefaultContact();
     var taAv = ta ? (ta.avatar || '') : '';
-    var taName = ta ? (ta.name || 'TA') : 'TA';
     var myEl = $('musicHomeMyAvatar');
     var taEl = $('musicHomeTaAvatar');
     if (myEl) myEl.innerHTML = avHTML(myAv, 72);
     if (taEl) taEl.innerHTML = avHTML(taAv, 72);
-    var nameEl = $('musicHomeTaName');
-    if (nameEl) nameEl.textContent = taName;
     ov.style.display = 'flex';
   }
   function hideMusicHome() { var ov = $('musicHomeOverlay'); if (ov) ov.style.display = 'none'; }
+
+  function goHomeFromMusic() {
+    hideMusicHome();
+    try { if (window.navTo) window.navTo('home'); } catch (e) {}
+  }
 
   function startListeningFromHome() {
     hideMusicHome();
@@ -50,9 +63,7 @@
       var app = $('app-music');
       if (app) { app.style.display = 'flex'; app.classList.add('show'); }
     } catch (e) {}
-    // 开始会话追踪
     startMusicSessionTracking();
-    // 如果有歌单则自动开始播放
     try {
       if (typeof window.musicControlToggle === 'function') {
         window.musicControlToggle();
@@ -63,7 +74,7 @@
     } catch (e) {}
   }
 
-  /* ============ MUSIC HISTORY (一起听记录) ============ */
+  /* ============ MUSIC HISTORY (一起听记录) - 图三样式黑白 ============ */
   function getMusicHistory() {
     try { return JSON.parse(localStorage.getItem('akini_music_history') || '[]'); } catch (e) { return []; }
   }
@@ -85,32 +96,66 @@
   }
   function fmtDuration(sec) {
     sec = Math.floor(sec || 0);
-    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
-    if (h > 0) return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-    return m + ':' + String(s).padStart(2, '0');
+    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+    if (h > 0) return h + '小时' + (m ? m + '分钟' : '');
+    return m + '分钟';
+  }
+  function dateKey(ts) {
+    try {
+      var d = new Date(ts);
+      return (d.getMonth() + 1) + '月' + d.getDate() + '日';
+    } catch (e) { return ''; }
   }
 
   function renderMusicHistory() {
-    var list = $('musicHistoryList');
-    if (!list) return;
+    var body = $('musicHistoryBody');
+    if (!body) return;
     var arr = getMusicHistory();
     if (!arr.length) {
-      list.innerHTML = '<div style="text-align:center;color:#999;padding:60px 20px;font-size:14px;">暂无一起听记录</div>';
+      body.innerHTML = '<div style="text-align:center;color:#999;padding:60px 20px;font-size:14px;">暂无一起听记录</div>';
       return;
     }
-    list.innerHTML = arr.map(function (it) {
-      return '<div style="display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid #f0f0f0;">' +
-        avHTML(it.taAvatar || '', 48) +
+    // 汇总
+    var totalSec = 0, totalSongs = 0;
+    arr.forEach(function (it) { totalSec += it.duration || 0; totalSongs += it.songCount || 0; });
+    var ta = getDefaultContact();
+    var taAv = ta ? (ta.avatar || '') : '';
+    var myAv = getMyAvatar();
+
+    var html = '';
+    // 汇总卡片
+    html += '<div style="background:#f5f5f5;border-radius:16px;padding:16px;margin-bottom:20px;display:flex;align-items:center;gap:14px;">' +
+      '<div style="display:flex;align-items:center;">' +
+      '<div style="z-index:2;">' + avHTML(myAv, 52) + '</div>' +
+      '<div style="margin-left:-16px;z-index:1;">' + avHTML(taAv, 52) + '</div>' +
+      '</div>' +
+      '<div style="flex:1;min-width:0;">' +
+      '<div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">你和' + (ta ? (ta.name || 'TA') : 'TA') + '</div>' +
+      '<div style="display:flex;gap:16px;font-size:12px;color:#666;">' +
+      '<span>陪伴彼此 ' + fmtDuration(totalSec) + '</span>' +
+      '<span>一起听过 ' + totalSongs + ' 首歌</span>' +
+      '</div>' +
+      '</div>' +
+      '</div>';
+    // 历史列表，按日期分组
+    html += '<div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:10px;">一起听历史</div>';
+    var curDate = '';
+    arr.forEach(function (it) {
+      var dk = dateKey(it.startTs);
+      if (dk !== curDate) {
+        curDate = dk;
+        html += '<div style="font-size:12px;color:#999;margin:14px 0 8px;font-weight:600;">' + dk + '</div>';
+      }
+      var time = fmtDate(it.startTs).split(' ')[1];
+      html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;">' +
+        avHTML(it.taAvatar || '', 40) +
         '<div style="flex:1;min-width:0;">' +
         '<div style="font-size:14px;font-weight:600;color:#1a1a1a;">' + String(it.taName || 'TA').replace(/</g, '&lt;') + '</div>' +
-        '<div style="font-size:11px;color:#999;margin-top:3px;">' + fmtDate(it.startTs) + '</div>' +
-        '</div>' +
-        '<div style="text-align:right;flex-shrink:0;">' +
-        '<div style="font-size:13px;font-weight:600;color:#1a1a1a;">' + fmtDuration(it.duration) + '</div>' +
-        '<div style="font-size:11px;color:#999;margin-top:3px;">' + (it.songCount || 0) + ' 首歌</div>' +
+        '<div style="font-size:12px;color:#999;margin-top:2px;">' + time + ' · 听了' + fmtDuration(it.duration) + ', ' + (it.songCount || 0) + '首歌</div>' +
         '</div>' +
         '</div>';
-    }).join('');
+    });
+    body.innerHTML = html;
   }
   function openMusicHistory() {
     renderMusicHistory();
@@ -119,35 +164,48 @@
   }
   function closeMusicHistory() { var ov = $('musicHistoryOverlay'); if (ov) ov.style.display = 'none'; }
 
-  /* ============ CONTACT AUTO-SKIP SONG ============ */
+  /* ============ CONTACT AUTO-SKIP SONG (概率) ============ */
   var _contactSkipTimer = null;
   function scheduleContactSkip() {
     if (_contactSkipTimer) { clearTimeout(_contactSkipTimer); _contactSkipTimer = null; }
-    // 随机 25~90 秒后切歌
-    var delay = 25000 + Math.random() * 65000;
+    // 每隔 30~60 秒摇一次，按设置概率切歌
+    var delay = 30000 + Math.random() * 30000;
     _contactSkipTimer = setTimeout(function () {
       _contactSkipTimer = null;
       try {
-        // 检查是否在听
         var active = false;
         try { active = '1' === localStorage.getItem('akini_music_listening_active'); } catch (e) {}
         var app = $('app-music');
-        if (!active || !app || app.style.display === 'none') return;
-        // 随机切到另一首
-        if (typeof window.musicControlNext === 'function') {
-          window.musicControlNext();
-        } else {
-          var nb = $('musicNextBtn');
-          if (nb) nb.click();
+        if (active && app && app.style.display !== 'none') {
+          var prob = getSkipProb();
+          if (Math.random() * 100 < prob) {
+            if (typeof window.musicControlNext === 'function') {
+              window.musicControlNext();
+            } else {
+              var nb = $('musicNextBtn');
+              if (nb) nb.click();
+            }
+          }
         }
       } catch (e) {}
-      // 继续调度下一次
       scheduleContactSkip();
     }, delay);
   }
   function stopContactSkip() { if (_contactSkipTimer) { clearTimeout(_contactSkipTimer); _contactSkipTimer = null; } }
 
-  /* ============ MUSIC INVITE CARD (in WeChat chat) ============ */
+  /* ============ MUSIC INVITE CARD (概率触发) ============ */
+  var _lastInviteTs = 0;
+  function maybeSendInvite() {
+    try {
+      var now = Date.now();
+      if (now - _lastInviteTs < 60000) return; // 至少间隔 60 秒
+      var prob = getInviteProb();
+      if (Math.random() * 100 >= prob) return;
+      _lastInviteTs = now;
+      sendMusicInviteCard();
+    } catch (e) {}
+  }
+
   function sendMusicInviteCard() {
     try {
       if (!window.akiniContacts) return;
@@ -158,7 +216,7 @@
       var taAv = ta ? (ta.avatar || '') : '';
       var html = '<div class="msg-row other" data-ts="' + __akiniNextTs() + '">' +
         '<div class="msg-content-line">' +
-        '<div class="avatar-col"><div class="msg-avatar">' + avHTML(taAv, 36).replace(/width:36px;height:36px/, 'width:36px;height:36px') + '</div></div>' +
+        '<div class="avatar-col"><div class="msg-avatar">' + avHTML(taAv, 36) + '</div></div>' +
         '<div class="bubble-wrap"><div class="bubble music-invite-bubble" onclick="window.__akiniAcceptMusicInvite &amp;&amp; window.__akiniAcceptMusicInvite()" style="background:#fff;border:1px solid #e5e5e5;border-radius:14px;padding:12px 14px;min-width:200px;max-width:260px;cursor:pointer;color:#1a1a1a;box-shadow:0 2px 8px rgba(0,0,0,.06);">' +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' + avHTML(taAv, 28) +
         '<div style="font-size:13px;font-weight:600;color:#1a1a1a;">' + taName.replace(/</g, '&lt;') + ' 邀请你一起听歌</div></div>' +
@@ -185,7 +243,7 @@
     } catch (e) {}
   };
 
-  /* ============ MUSIC END CARD (centered in WeChat chat) ============ */
+  /* ============ MUSIC END CARD ============ */
   function sendMusicEndCard(myCount, taCount) {
     try {
       if (!window.akiniContacts) return;
@@ -251,12 +309,8 @@
     try { localStorage.setItem('akini_music_listening_active', '0'); } catch (e) {}
   }
 
-  // 暴露给外部 hook
   window.__r6StartMusicSession = startMusicSessionTracking;
   window.__r6EndMusicSession = endMusicSessionTracking;
-  window.__r6MusicSongPlayed = function () { _musicSessionSongCount++; };
-  window.__r6MusicMyMsg = function () { _musicSessionMyMsgs++; };
-  window.__r6MusicTaMsg = function () { _musicSessionTaMsgs++; };
 
   /* ============ COMPANION HOME PAGE ============ */
   var COMPANION_PRESETS = ['睡觉', '吃饭', '散步'];
@@ -266,25 +320,27 @@
     var myAv = getMyAvatar();
     var myEl = $('companionHomeMyAvatar');
     if (myEl) myEl.innerHTML = avHTML(myAv, 90);
-    // 渲染预设
     var presetsEl = $('companionHomePresets');
     if (presetsEl) {
       presetsEl.innerHTML = COMPANION_PRESETS.map(function (p) {
         return '<button type="button" data-preset="' + p + '" style="padding:10px 20px;border:1.5px solid #1a1a1a;border-radius:20px;background:#fff;color:#1a1a1a;font-size:14px;cursor:pointer;font-weight:500;">' + p + '</button>';
       }).join('');
     }
+    var ci = $('companionHomeCustomInput');
+    if (ci) ci.value = '';
     ov.style.display = 'flex';
   }
   function hideCompanionHome() { var ov = $('companionHomeOverlay'); if (ov) ov.style.display = 'none'; }
 
+  function goHomeFromCompanion() {
+    hideCompanionHome();
+    try { if (window.navTo) window.navTo('home'); } catch (e) {}
+  }
+
   function startCompanionWithContent(content) {
     hideCompanionHome();
-    try {
-      localStorage.setItem('akini_companion_content', content || '');
-    } catch (e) {}
-    // 触发陪伴开始
+    try { localStorage.setItem('akini_companion_content', content || ''); } catch (e) {}
     if (typeof window.__openCompanion === 'function') {
-      // 如果有进行中的会话会直接进入，否则用默认联系人开始
       window.__openCompanion();
     } else {
       var app = $('app-companion');
@@ -314,18 +370,18 @@
       return;
     }
     list.innerHTML = arr.map(function (it) {
-      return '<div style="display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid #f0f0f0;">' +
+      return '<div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #f0f0f0;">' +
         '<div style="flex-shrink:0;text-align:center;">' +
-        avHTML(it.taAvatar || '', 44) +
-        '<div style="font-size:10px;color:#999;margin-top:4px;">' + fmtDate(it.startTs).split(' ')[0] + '</div>' +
+        avHTML(it.avatar || it.taAvatar || '', 44) +
+        '<div style="font-size:10px;color:#999;margin-top:4px;white-space:nowrap;">' + fmtDate(it.startTs).split(' ')[0] + '</div>' +
         '</div>' +
         '<div style="flex:1;min-width:0;">' +
-        '<div style="font-size:13px;font-weight:600;color:#1a1a1a;">' + String(it.content || '陪伴').replace(/</g, '&lt;') + '</div>' +
-        '<div style="font-size:11px;color:#bbb;margin-top:3px;">' + (it.summary || '一起度过了美好时光') + '</div>' +
+        '<div style="font-size:14px;font-weight:600;color:#1a1a1a;">' + String(it.name || it.taName || 'TA').replace(/</g, '&lt;') +
+        ' · ' + String(it.content || '陪伴').replace(/</g, '&lt;') + '</div>' +
+        '<div style="font-size:11px;color:#999;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (it.summary || ('共' + (it.msgCount || 0) + '条消息')) + '</div>' +
         '</div>' +
         '<div style="text-align:right;flex-shrink:0;">' +
         '<div style="font-size:13px;font-weight:600;color:#1a1a1a;">' + fmtDuration(it.duration) + '</div>' +
-        '<div style="font-size:11px;color:#999;margin-top:3px;">' + fmtDate(it.startTs).split(' ')[1] + '</div>' +
         '</div>' +
         '</div>';
     }).join('');
@@ -333,12 +389,25 @@
   function openCompanionHistory() {
     renderCompanionHistory();
     var ov = $('companionHistoryOverlay');
-    if (ov) { ov.style.display = 'flex'; ov.style.alignItems = 'flex-end'; }
+    if (ov) ov.style.display = 'flex';
   }
+  function closeCompanionHistory() { var ov = $('companionHistoryOverlay'); if (ov) ov.style.display = 'none'; }
+
+  /* ============ PROBABILITY SETTINGS ============ */
+  function openProbSettings() {
+    var ov = $('probSettingsOverlay');
+    if (!ov) return;
+    var inv = $('probInviteInput');
+    var sk = $('probSkipInput');
+    if (inv) inv.value = getInviteProb();
+    if (sk) sk.value = getSkipProb();
+    ov.style.display = 'flex';
+  }
+  function closeProbSettings() { var ov = $('probSettingsOverlay'); if (ov) ov.style.display = 'none'; }
 
   /* ============ BINDINGS ============ */
   function bind() {
-    // 包装消息追加函数以统计一起听期间的消息数
+    // 消息统计
     try {
       if (typeof window.__akiniAppendMessageHTML === 'function' && !window.__akiniAppendMessageHTML.__r6wrapped) {
         var origAppend = window.__akiniAppendMessageHTML;
@@ -349,7 +418,11 @@
             if (active) {
               var html = arguments[1] || '';
               if (/msg-row me\b/.test(html)) _musicSessionMyMsgs++;
-              else if (/msg-row (other|ta)\b/.test(html)) _musicSessionTaMsgs++;
+              else if (/msg-row (other|ta)\b/.test(html)) {
+                _musicSessionTaMsgs++;
+                // 联系人发消息时按概率发起听歌邀请
+                maybeSendInvite();
+              }
             }
           } catch (e) {}
           return origAppend.apply(this, arguments);
@@ -358,12 +431,12 @@
       }
     } catch (e) {}
 
-    // 包装音乐控制函数以统计歌曲数（可能需要等待 akini-core 初始化）
+    // 音乐控制函数包装
     function wrapMusicControls() {
       var ready = typeof window.musicControlNext === 'function';
       if (!ready) { setTimeout(wrapMusicControls, 200); return; }
       try {
-        ['musicControlNext', 'musicControlPrev', 'musicControlToggle'].forEach(function (fn) {
+        ['musicControlNext', 'musicControlPrev'].forEach(function (fn) {
           if (typeof window[fn] === 'function' && !window[fn].__r6wrapped) {
             var orig = window[fn];
             window[fn] = function () {
@@ -371,7 +444,7 @@
               try {
                 var active = false;
                 try { active = '1' === localStorage.getItem('akini_music_listening_active'); } catch (e) {}
-                if (active && (fn === 'musicControlNext' || fn === 'musicControlPrev')) _musicSessionSongCount++;
+                if (active) _musicSessionSongCount++;
               } catch (e) {}
               return r;
             };
@@ -387,10 +460,12 @@
     if (startBtn) startBtn.addEventListener('click', startListeningFromHome);
     var histBtn = $('musicHomeHistoryBtn');
     if (histBtn) histBtn.addEventListener('click', openMusicHistory);
-    var histClose = $('musicHistoryClose');
-    if (histClose) histClose.addEventListener('click', closeMusicHistory);
-    var histOverlay = $('musicHistoryOverlay');
-    if (histOverlay) histOverlay.addEventListener('click', function (e) { if (e.target === histOverlay) closeMusicHistory(); });
+    var musicBack = $('musicHomeBackBtn');
+    if (musicBack) musicBack.addEventListener('click', goHomeFromMusic);
+
+    // Music history
+    var mhBack = $('musicHistoryBack');
+    if (mhBack) mhBack.addEventListener('click', closeMusicHistory);
 
     // Music end popup
     var endClose = $('musicEndPopupClose');
@@ -418,34 +493,66 @@
     });
     var compHistBtn = $('companionHomeHistoryBtn');
     if (compHistBtn) compHistBtn.addEventListener('click', openCompanionHistory);
-    var compHistClose = $('companionHistoryClose');
-    if (compHistClose) compHistClose.addEventListener('click', function () { var ov = $('companionHistoryOverlay'); if (ov) ov.style.display = 'none'; });
+    var compBack = $('companionHomeBackBtn');
+    if (compBack) compBack.addEventListener('click', goHomeFromCompanion);
 
-    // 拦截音乐结束：监听 musicBackBtn
-    var musicBack = $('musicBackBtn');
-    if (musicBack && !musicBack.__r6bound) {
-      musicBack.__r6bound = true;
-      var orig = musicBack.onclick;
-      musicBack.onclick = function () {
+    // Companion history
+    var chBack = $('companionHistoryBack');
+    if (chBack) chBack.addEventListener('click', closeCompanionHistory);
+
+    // 音乐退出：拦截 musicBackBtn，结束会话并回到音乐首页
+    var musicPlayerBack = $('musicBackBtn');
+    if (musicPlayerBack && !musicPlayerBack.__r6bound) {
+      musicPlayerBack.__r6bound = true;
+      musicPlayerBack.addEventListener('click', function () {
         try {
           var active = false;
           try { active = '1' === localStorage.getItem('akini_music_listening_active'); } catch (e) {}
           if (active) endMusicSessionTracking();
         } catch (e) {}
-        if (orig) return orig.apply(this, arguments);
-      };
+        // 回到音乐首页
+        setTimeout(function () {
+          try {
+            var app = $('app-music');
+            if (app) { app.style.display = 'none'; app.classList.remove('show'); }
+          } catch (e) {}
+          showMusicHome();
+        }, 100);
+      }, true);
     }
 
-    // 监听播放事件以计数
-    try {
-      var audio = document.querySelector('#app-music audio') || (window.F);
-      if (audio) {
-        audio.addEventListener('play', function () { _musicSessionSongCount++; });
-      }
-    } catch (e) {}
+    // 陪伴退出：拦截 companionMainBackBtn，回到陪伴首页
+    var compMainBack = $('companionMainBackBtn');
+    if (compMainBack && !compMainBack.__r6bound) {
+      compMainBack.__r6bound = true;
+      compMainBack.addEventListener('click', function () {
+        setTimeout(function () {
+          try {
+            var app = $('app-companion');
+            if (app) { app.style.display = 'none'; app.classList.remove('show'); }
+          } catch (e) {}
+          showCompanionHome();
+        }, 100);
+      }, true);
+    }
 
-    // 暴露邀请卡片入口
+    // 概率设置
+    var probSave = $('probSettingsSave');
+    if (probSave) probSave.addEventListener('click', function () {
+      var inv = $('probInviteInput');
+      var sk = $('probSkipInput');
+      var iv = inv ? parseFloat(inv.value) : NaN;
+      var sv = sk ? parseFloat(sk.value) : NaN;
+      if (!isNaN(iv) && iv >= 0 && iv <= 100) { try { localStorage.setItem('akini_prob_invite', String(iv)); } catch (e) {} }
+      if (!isNaN(sv) && sv >= 0 && sv <= 100) { try { localStorage.setItem('akini_prob_skip', String(sv)); } catch (e) {} }
+      closeProbSettings();
+      try { window.__akiniToast && window.__akiniToast('概率已保存'); } catch (e) {}
+    });
+    var probClose = $('probSettingsClose');
+    if (probClose) probClose.addEventListener('click', closeProbSettings);
+
     window.__akiniSendMusicInviteCard = sendMusicInviteCard;
+    window.__akiniOpenProbSettings = openProbSettings;
   }
 
   if (document.readyState === 'loading') {
@@ -454,7 +561,6 @@
     bind();
   }
 
-  // 暴露音乐首页入口给 navigation
   window.__akiniShowMusicHome = showMusicHome;
   window.__akiniShowCompanionHome = showCompanionHome;
 })();

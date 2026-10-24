@@ -266,3 +266,21 @@ html body.bubble-css-on #watchChatBody .msg-row .bubble:not(.transfer-bubble):no
   line-height: 1.55 !important;
 }
 
+/* 15) 系统消息底图修复：默认气泡规则把 .msg-row:not(.me) .bubble 涂成白色，
+   导致系统消息（.msg-row.system）也被覆盖为纯白、毛玻璃失效。
+   用双写类名提特异性，恢复半透明灰底 + backdrop-filter 透出聊天底图。 */
+html body #app-chat .chat-body .msg-row.system.msg-row.system .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.img-bubble):not(.video-bubble):not(.voice-bubble):not(.music-invite-bubble):not(.music-end-bubble) {
+  background: rgba(200,200,200,.35) !important;
+  background-color: rgba(200,200,200,.35) !important;
+  backdrop-filter: blur(12px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
+  color: #1a1a1a !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+  padding: 1px 7px !important;
+  max-width: 70% !important;
+  text-align: center !important;
+  text-shadow: none !important;
+}
+

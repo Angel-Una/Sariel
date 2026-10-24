@@ -5451,7 +5451,19 @@ function addCallRecord(contactId, record) {
     var c = contactById(st.cid);
     var name = c ? (c.name || '未命名') : '对方';
     var durMs = Date.now() - (st.ts || Date.now());
-    var msgCount = (st.msgs || []).length;
+    var msgs = st.msgs || [];
+    var msgCount = msgs.length;
+    /* 陪伴内容：从 r6 首页写入的 localStorage 读取 */
+    var content = '';
+    try { content = localStorage.getItem('akini_companion_content') || ''; } catch (e) {}
+    /* 聊天记录总结：取最后一条文本消息片段，无文本则显示条数 */
+    var summary = '';
+    for (var i = msgs.length - 1; i >= 0; i--) {
+      var m = msgs[i];
+      if (m && m.text && String(m.text).trim()) { summary = String(m.text).trim(); break; }
+    }
+    if (!summary) summary = '共' + msgCount + '条消息';
+    else if (summary.length > 30) summary = summary.substring(0, 30) + '…';
     var arr = companionHistory();
     arr.unshift({
       cid: st.cid,
@@ -5460,7 +5472,9 @@ function addCallRecord(contactId, record) {
       duration: durMs,
       msgCount: msgCount,
       startTs: st.ts,
-      endTs: Date.now()
+      endTs: Date.now(),
+      content: content,
+      summary: summary
     });
     /* 最多保留 100 条 */
     if (arr.length > 100) arr.length = 100;
