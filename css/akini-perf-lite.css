@@ -153,33 +153,33 @@ html body .phone-frame#phoneFrame {
   background-repeat: no-repeat !important;
 }
 
-/* 11) 聊天顶栏 / 底部输入栏底衬。
-   主样式表把它们强制成 background:0 0 !important，结果按钮和输入框直接悬空在壁纸上。
-   这里补回半透明白色磨砂条，让顶栏、加号键、输入框、发送键有统一的底座。 */
+/* 11) 聊天顶栏 / 底部输入栏：保持透明悬空（直接显示背景图）。
+   不补任何底色、边框或毛玻璃，按钮和输入框直接浮在壁纸上。 */
 html body #app-chat .chat-top-bar.chat-top-bar,
 html body .chat-top-bar.chat-top-bar.chat-top-bar {
-  background: rgba(250, 250, 250, 0.82) !important;
-  background-color: rgba(250, 250, 250, 0.82) !important;
-  -webkit-backdrop-filter: saturate(180%) blur(18px) !important;
-  backdrop-filter: saturate(180%) blur(18px) !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
 html body #app-chat .chat-input-bar-area.chat-input-bar-area,
 html body .chat-input-bar-area.chat-input-bar-area.chat-input-bar-area {
-  background: rgba(250, 250, 250, 0.88) !important;
-  background-color: rgba(250, 250, 250, 0.88) !important;
-  border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
-  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.03) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
-  backdrop-filter: blur(12px) saturate(160%) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border-top: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
 
-/* 12) 消息小气泡（参考 iMessage tapback）：白底黑描边，贴在消息气泡左下角。
+/* 12) 消息小气泡（参考 iMessage tapback）：白底黑描边。
+   我发的消息 → 贴在气泡左下角；联系人发的消息 → 贴在气泡右下角。
    用 ::after + attr(data-mb) 渲染，不往气泡文字里塞节点，复制/引用文本不受影响。 */
-html body #chatBody#chatBody .msg-row .bubble[data-mb]::after,
-html body #companionMsgs#companionMsgs .msg-row .bubble[data-mb]::after,
-html body #watchChatBody#watchChatBody .msg-row .bubble[data-mb]::after {
+html body #chatBody#chatBody .msg-row.me .bubble[data-mb]::after,
+html body #companionMsgs#companionMsgs .msg-row.me .bubble[data-mb]::after,
+html body #watchChatBody#watchChatBody .msg-row.me .bubble[data-mb]::after {
   content: attr(data-mb) !important;
   display: block !important;
   width: auto !important;
@@ -187,6 +187,39 @@ html body #watchChatBody#watchChatBody .msg-row .bubble[data-mb]::after {
   max-width: 96px !important;
   position: absolute !important;
   left: -5px !important;
+  right: auto !important;
+  bottom: -12px !important;
+  z-index: 3 !important;
+  padding: 1px 6px !important;
+  border-radius: 9px !important;
+  background: #fff !important;
+  background-color: #fff !important;
+  border: 1.5px solid #000 !important;
+  color: #000 !important;
+  font-size: 10px !important;
+  line-height: 15px !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  box-sizing: border-box !important;
+  pointer-events: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14) !important;
+}
+html body #chatBody#chatBody .msg-row.other .bubble[data-mb]::after,
+html body #companionMsgs#companionMsgs .msg-row.other .bubble[data-mb]::after,
+html body #watchChatBody#watchChatBody .msg-row.other .bubble[data-mb]::after,
+html body #chatBody#chatBody .msg-row.ta .bubble[data-mb]::after,
+html body #companionMsgs#companionMsgs .msg-row.ta .bubble[data-mb]::after,
+html body #watchChatBody#watchChatBody .msg-row.ta .bubble[data-mb]::after {
+  content: attr(data-mb) !important;
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: 96px !important;
+  position: absolute !important;
+  left: auto !important;
+  right: -5px !important;
   bottom: -12px !important;
   z-index: 3 !important;
   padding: 1px 6px !important;

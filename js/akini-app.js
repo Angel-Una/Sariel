@@ -7478,7 +7478,8 @@ function it(t,e){
           if(!ts) return;
           if(ts>maxTs) maxTs=ts;
           if(mp[ts] || ts<=last) return;
-          if(!r.classList.contains('other') || r.classList.contains('system')) return;
+          var isTa = r.classList.contains('other') || r.classList.contains('ta');
+          if(!isTa || r.classList.contains('system')) return;
           if(!r.querySelector('.bubble')) return;
           var p=(window.AKR && window.AKR.getProb) ? window.AKR.getProb('miniBubble') : 0.3;
           if(Math.random()>=p) return;
@@ -7514,7 +7515,6 @@ function it(t,e){
     var id=curCid();
     if(!id){ window.__akiniToast && window.__akiniToast('请先进入聊天'); return; }
     var old=document.getElementById('akiniMbPicker'); if(old) old.remove();
-    var pool=bubblePool();
     var ts=row.getAttribute('data-ts');
     var cur='';
     try{ cur=cidMap(mapAll(),id)[ts]||''; }catch(e){}
@@ -7523,7 +7523,7 @@ function it(t,e){
     wrap.id='akiniMbPicker';
     wrap.style.cssText='position:fixed;inset:0;z-index:9300;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;';
     var inner=document.createElement('div');
-    inner.style.cssText='width:100%;max-width:480px;max-height:72vh;background:#fff;border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;box-sizing:border-box;';
+    inner.style.cssText='width:100%;max-width:480px;background:#fff;border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;box-sizing:border-box;';
     var head=document.createElement('div');
     head.style.cssText='display:flex;align-items:center;justify-content:space-between;flex-shrink:0;';
     var title=document.createElement('div');
@@ -7534,40 +7534,46 @@ function it(t,e){
     close.style.cssText='border:none;background:none;font-size:20px;color:#999;cursor:pointer;padding:0 4px;';
     close.addEventListener('click', function(){ wrap.remove(); });
     head.appendChild(title); head.appendChild(close);
+
+    var input=document.createElement('input');
+    input.type='text';
+    input.maxLength=20;
+    input.placeholder='输入小气泡内容…';
+    input.value=cur||'';
+    input.style.cssText='width:100%;box-sizing:border-box;padding:12px 14px;border-radius:13px;border:1.5px solid #000;background:#fff;color:#000;font-size:15px;outline:none;';
+
     var tip=document.createElement('div');
-    tip.style.cssText='font-size:12px;color:#999;flex-shrink:0;';
-    tip.textContent='内容来自 字卡库 → 小气泡';
-    var list=document.createElement('div');
-    list.style.cssText='flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;display:flex;flex-wrap:wrap;gap:8px;padding:2px;';
+    tip.style.cssText='font-size:11px;color:#999;flex-shrink:0;line-height:1.5;';
+    tip.textContent='自己输入的小气泡只在这条消息上显示；联系人会从字卡库「小气泡」随机抽内容';
+
+    var confirmBtn=document.createElement('button');
+    confirmBtn.type='button'; confirmBtn.textContent='确定';
+    confirmBtn.style.cssText='width:100%;padding:12px;border-radius:13px;border:none;background:#1a1a1a;color:#fff;font-size:15px;font-weight:600;cursor:pointer;flex-shrink:0;';
+    function doConfirm(){
+      var t=input.value;
+      if(!t || !t.trim()){ input.focus(); return; }
+      if(setFor(row, t)){ wrap.remove(); window.__akiniToast && window.__akiniToast('✓ 已添加小气泡'); }
+    }
+    confirmBtn.addEventListener('click', doConfirm);
+    input.addEventListener('keydown', function(e){
+      if(e.key==='Enter'){ e.preventDefault(); doConfirm(); }
+    });
+
+    inner.appendChild(head); inner.appendChild(input); inner.appendChild(tip);
 
     if(cur){
       var rm=document.createElement('button');
       rm.type='button'; rm.textContent='移除当前小气泡';
       rm.style.cssText='width:100%;padding:11px;border-radius:13px;border:1.5px solid #f0c4c4;background:#fff5f5;color:#c0392b;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;';
       rm.addEventListener('click', function(){ setFor(row,''); wrap.remove(); window.__akiniToast && window.__akiniToast('已移除小气泡'); });
-      list.appendChild(rm);
+      inner.appendChild(rm);
     }
 
-    if(!pool.length){
-      var empty=document.createElement('div');
-      empty.style.cssText='width:100%;text-align:center;color:#aaa;font-size:13px;padding:26px 8px;line-height:1.7;';
-      empty.innerHTML='还没有小气泡内容<br/>请到 字卡库 → 小气泡 添加';
-      list.appendChild(empty);
-    }else{
-      pool.forEach(function(t){
-        var b=document.createElement('button');
-        b.type='button'; b.textContent=t;
-        b.style.cssText='max-width:100%;padding:7px 12px;border-radius:15px;border:1.5px solid #000;background:#fff;color:#000;font-size:13px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
-        b.addEventListener('click', function(){
-          if(setFor(row, t)){ wrap.remove(); window.__akiniToast && window.__akiniToast('✓ 已添加小气泡'); }
-        });
-        list.appendChild(b);
-      });
-    }
-    inner.appendChild(head); inner.appendChild(tip); inner.appendChild(list);
+    inner.appendChild(confirmBtn);
     wrap.appendChild(inner);
     wrap.addEventListener('click', function(e){ if(e.target===wrap) wrap.remove(); });
     document.body.appendChild(wrap);
+    setTimeout(function(){ try{ input.focus(); }catch(e){} }, 80);
   }
   window.__akiniOpenMiniBubblePicker = openPicker;
 
