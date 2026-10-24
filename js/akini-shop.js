@@ -737,7 +737,7 @@
 
 (function(){
   var PROB_KEYS = {
-    emoji: 'akini_prob_emoji', quote: 'akini_prob_quote', poke: 'akini_prob_poke', noReply: 'akini_prob_noReply', replyCall: 'akini_prob_replyCall',
+    emoji: 'akini_prob_emoji', quote: 'akini_prob_quote', miniBubble: 'akini_prob_miniBubble', poke: 'akini_prob_poke', noReply: 'akini_prob_noReply', replyCall: 'akini_prob_replyCall',
     missCall: 'akini_prob_missCall', answerCall: 'akini_prob_answerCall', incomingCall: 'akini_prob_incomingCall',
     refundTransfer: 'akini_prob_refundTransfer', collectTransfer: 'akini_prob_collectTransfer',
     meaningfulNumber: 'akini_prob_meaningfulNumber', taTransfer: 'akini_prob_taTransfer',
@@ -746,7 +746,7 @@
     replySticker: 'akini_prob_replySticker', pinyinCard: 'akini_prob_pinyinCard', emojiMixMsg: 'akini_prob_emojiMixMsg', postWithSticker: 'akini_prob_postWithSticker', surveyInvite: 'akini_prob_surveyInvite', shopCard: 'akini_prob_shopCard',
   };
   var DEFAULT_PROBS = {
-    emoji: 20, quote: 30, poke: 3, noReply: 10, replyCall: 10,
+    emoji: 20, quote: 30, miniBubble: 30, poke: 3, noReply: 10, replyCall: 10,
     missCall: 15, answerCall: 85, incomingCall: 10,
     refundTransfer: 30, collectTransfer: 70,
     meaningfulNumber: 15, taTransfer: 7,
@@ -877,7 +877,7 @@
   document.addEventListener('DOMContentLoaded', function(){
     resetProbDefaultsIfNeeded();
     installOnceExtras();
-    bindProbInput('probEmoji','emoji'); bindProbInput('probQuote','quote'); bindProbInput('probPoke','poke'); bindProbInput('probNoReply','noReply');
+    bindProbInput('probEmoji','emoji'); bindProbInput('probQuote','quote'); bindProbInput('probMiniBubble','miniBubble'); bindProbInput('probPoke','poke'); bindProbInput('probNoReply','noReply');
     bindProbInput('probMissCall','missCall'); bindProbInput('probAnswerCall','answerCall'); bindProbInput('probIncomingCall','incomingCall');
     bindProbInput('probRefundTransfer','refundTransfer'); bindProbInput('probCollectTransfer','collectTransfer');
     bindProbInput('probMeaningfulNumber','meaningfulNumber');
