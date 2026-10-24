@@ -25,30 +25,30 @@
   function translateSelectors(css){
     if (!css) return "";
     var meBases = [
-      "html body.bubble-css-on #app-chat .chat-body .msg-row.me .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble)",
-      "html body.bubble-css-on #app-chat .msg-row.me .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble)",
+      "html body.bubble-css-on #app-chat .chat-body .msg-row.me .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble)",
+      "html body.bubble-css-on #app-chat .msg-row.me .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble)",
       "html body.bubble-css-on #bubbleCssPreview .msg-row.me .bubble",
       "html body.bubble-css-on #bubbleCssPreview .bubble.me",
-      "html body.bubble-css-on #companionMsgs .msg-row.me .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble)",
-      "html body.bubble-css-on #watchChatBody .msg-row.me .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble)"
+      "html body.bubble-css-on #companionMsgs .msg-row.me .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble)",
+      "html body.bubble-css-on #watchChatBody .msg-row.me .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble)"
     ];
     var otherBases = [
-      "html body.bubble-css-on #app-chat .chat-body .msg-row.other .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble)",
-      "html body.bubble-css-on #app-chat .msg-row.other .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble)",
-      "html body.bubble-css-on #app-chat .msg-row.ta .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble)",
+      "html body.bubble-css-on #app-chat .chat-body .msg-row.other .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble)",
+      "html body.bubble-css-on #app-chat .msg-row.other .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble)",
+      "html body.bubble-css-on #app-chat .msg-row.ta .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble)",
       "html body.bubble-css-on #bubbleCssPreview .msg-row.other .bubble",
       "html body.bubble-css-on #bubbleCssPreview .bubble.other",
-      "html body.bubble-css-on #companionMsgs .msg-row.other .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble)",
-      "html body.bubble-css-on #companionMsgs .msg-row.ta .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble)",
-      "html body.bubble-css-on #watchChatBody .msg-row.other .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble)",
-      "html body.bubble-css-on #watchChatBody .msg-row.ta .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble)"
+      "html body.bubble-css-on #companionMsgs .msg-row.other .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble)",
+      "html body.bubble-css-on #companionMsgs .msg-row.ta .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble)",
+      "html body.bubble-css-on #watchChatBody .msg-row.other .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble)",
+      "html body.bubble-css-on #watchChatBody .msg-row.ta .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble)"
     ];
     var anyBases = [
-      "html body.bubble-css-on #app-chat .chat-body .msg-row .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble)",
-      "html body.bubble-css-on #app-chat .msg-row .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble)",
+      "html body.bubble-css-on #app-chat .chat-body .msg-row .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble)",
+      "html body.bubble-css-on #app-chat .msg-row .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble)",
       "html body.bubble-css-on #bubbleCssPreview .bubble",
-      "html body.bubble-css-on #companionMsgs .msg-row .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble)",
-      "html body.bubble-css-on #watchChatBody .msg-row .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble)"
+      "html body.bubble-css-on #companionMsgs .msg-row .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble)",
+      "html body.bubble-css-on #watchChatBody .msg-row .bubble:not(.transfer-bubble):not(.sticker-bubble):not(.survey-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble)"
     ];
 
     try {
@@ -109,7 +109,7 @@
     var hasCss = !!raw.trim();
     if(hasCss){
       /* 开启 CSS 美化时，彻底清除磨砂液态玻璃，完全交给自定义样式接管（严格排除特殊功能卡片） */
-      final="\nbody.bubble-css-on #app-chat .bubble:not(.transfer-bubble):not(.shop-card-bubble):not(.survey-bubble), body.bubble-css-on #companionMsgs .bubble:not(.transfer-bubble):not(.shop-card-bubble):not(.survey-bubble), body.bubble-css-on #watchChatBody .bubble:not(.transfer-bubble):not(.shop-card-bubble):not(.survey-bubble) { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }\n";
+      final="\nbody.bubble-css-on #app-chat .bubble:not(.transfer-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble):not(.survey-bubble), body.bubble-css-on #companionMsgs .bubble:not(.transfer-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble):not(.survey-bubble), body.bubble-css-on #watchChatBody .bubble:not(.transfer-bubble):not(.shop-card-bubble):not(.music-invite-bubble):not(.music-end-bubble):not(.survey-bubble) { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }\n";
       final+=addImportant(translateSelectors(raw));
       /* 终极保障：防止任何用户 CSS 污染转账/商店/问卷原生白底黑字卡片 */
       final+="\nhtml body #app-chat .bubble.transfer-bubble,html body #app-chat .bubble.shop-card-bubble,html body #app-chat .bubble.survey-bubble{background:#ffffff !important;background-color:#ffffff !important;color:#1a1a1a !important;border:1px solid #e8e8e8 !important;box-shadow:0 4px 14px rgba(0,0,0,0.07) !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;}\nhtml body #app-chat .bubble.transfer-bubble *,html body #app-chat .bubble.shop-card-bubble *,html body #app-chat .bubble.survey-bubble *{text-shadow:none !important;}\nhtml body #app-chat .bubble.transfer-bubble .tr-amount{color:#1a1a1a !important;}\nhtml body #app-chat .bubble.transfer-bubble .tr-note{color:#666666 !important;}\nhtml body #app-chat .bubble.transfer-bubble .tr-type{color:#888888 !important;}\nhtml body #app-chat .bubble.transfer-bubble .tr-claim-tip{color:#666666 !important;}\nhtml body #app-chat .bubble.shop-card-bubble .shop-card-bubble-title,html body #app-chat .bubble.shop-card-bubble .shop-card-bubble-item{color:#1a1a1a !important;}\nhtml body #app-chat .bubble.survey-bubble .survey-bubble-title{color:#1a1a1a !important;}\nhtml body #app-chat .bubble.survey-bubble .survey-bubble-sub{color:#666666 !important;}\nhtml body #app-chat .bubble.survey-bubble .survey-bubble-count{color:#888888 !important;}\n";

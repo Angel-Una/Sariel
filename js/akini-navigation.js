@@ -155,7 +155,16 @@ if (window.__navBack) { window.__navBack._akini = true; }
             localStorage.removeItem("akini_music_exited");
           }catch(e){}
         }
-        __akiniShowAppContainer("music");
+        // 如果有进行中的一起听会话，直接进播放器；否则先显示音乐首页
+        var _active = false;
+        try{ _active = "1" === localStorage.getItem("akini_music_listening_active"); }catch(e){}
+        if(_active){
+          __akiniShowAppContainer("music");
+        } else if(typeof window.__akiniShowMusicHome === "function"){
+          window.__akiniShowMusicHome();
+        } else {
+          __akiniShowAppContainer("music");
+        }
         return;
       }
 
@@ -203,7 +212,21 @@ if (window.__navBack) { window.__navBack._akini = true; }
       if(app === "companion"){
         showEl("app-companion");
         try{ window.__akiniClearFeatureUnread && window.__akiniClearFeatureUnread("companion"); }catch(e){}
-        window.__openCompanion && window.__openCompanion();
+        // 如果有进行中的陪伴会话，直接进主界面；否则先显示陪伴首页
+        var _cactive = false;
+        try{
+          if(typeof window.companionState === "function"){
+            var _st = window.companionState();
+            _cactive = !!( _st && _st.cid );
+          }
+        }catch(e){}
+        if(_cactive){
+          window.__openCompanion && window.__openCompanion();
+        } else if(typeof window.__akiniShowCompanionHome === "function"){
+          window.__akiniShowCompanionHome();
+        } else {
+          window.__openCompanion && window.__openCompanion();
+        }
         return;
       }
       if(app === "mail"){
