@@ -744,6 +744,7 @@
     groupCall: 'akini_prob_groupCall', groupAtMe: 'akini_prob_groupAtMe', groupAtOther: 'akini_prob_groupAtOther',
     groupTransferOther: 'akini_prob_groupTransferOther', groupTransferMe: 'akini_prob_groupTransferMe',
     replySticker: 'akini_prob_replySticker', pinyinCard: 'akini_prob_pinyinCard', emojiMixMsg: 'akini_prob_emojiMixMsg', postWithSticker: 'akini_prob_postWithSticker', surveyInvite: 'akini_prob_surveyInvite', shopCard: 'akini_prob_shopCard',
+    musicInvite: 'akini_prob_invite', musicSkip: 'akini_prob_skip',
   };
   var DEFAULT_PROBS = {
     emoji: 20, quote: 30, miniBubble: 30, poke: 3, noReply: 10, replyCall: 10,
@@ -753,6 +754,7 @@
     groupCall: 15, groupAtMe: 15, groupAtOther: 5,
     groupTransferOther: 15, groupTransferMe: 15,
     replySticker: 20, pinyinCard: 35, emojiMixMsg: 20, postWithSticker: 10, surveyInvite: 20, shopCard: 20,
+    musicInvite: 10, musicSkip: 5,
   };
   /* zzza→已读不回默认概率维持 10% 不变。'2' 是 误迁移出的值，启动对账后统一迁回 '10'（三处副本） */
   var __migrateNoReply = function () {
@@ -878,6 +880,7 @@
     resetProbDefaultsIfNeeded();
     installOnceExtras();
     bindProbInput('probEmoji','emoji'); bindProbInput('probQuote','quote'); bindProbInput('probMiniBubble','miniBubble'); bindProbInput('probPoke','poke'); bindProbInput('probNoReply','noReply');
+    bindProbInput('probMusicInvite','musicInvite'); bindProbInput('probMusicSkip','musicSkip');
     bindProbInput('probMissCall','missCall'); bindProbInput('probAnswerCall','answerCall'); bindProbInput('probIncomingCall','incomingCall');
     bindProbInput('probRefundTransfer','refundTransfer'); bindProbInput('probCollectTransfer','collectTransfer');
     bindProbInput('probMeaningfulNumber','meaningfulNumber');

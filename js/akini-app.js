@@ -134,6 +134,8 @@
       menu.style.display = 'block';
       window.__akiniCtxSelRow = row;
       window.__akiniCtxSelBubble = bubble;
+      /* 同步设置 core 小气泡按钮依赖的行引用，避免移动端 core 的 a() 未执行导致 __akiniMbCtxRow 为空 */
+      window.__akiniMbCtxRow = row;
     }
     function ensureButtons(){
       ['ctxCopy','ctxQuote','ctxFav','ctxDelete'].forEach(function(id){
@@ -142,8 +144,8 @@
         btn.__fbBound = true;
         btn.addEventListener('click', function(ev){
           ev.stopPropagation();
-          var row = window.__akiniCtxSelRow;
-          var bubble = window.__akiniCtxSelBubble;
+          var row = window.__akiniCtxSelRow || window.__akiniMbCtxRow;
+          var bubble = window.__akiniCtxSelBubble || (row ? row.querySelector('.bubble') : null);
           if(!row){ var menu = document.getElementById('msgContextMenu'); if(menu) menu.style.display='none'; return; }
           if(id === 'ctxCopy'){
             var t = bubble ? bubble.innerText : '';
@@ -7442,6 +7444,7 @@ function it(t,e){
 (function(){
   var MAP_KEY = 'akini_msg_mb';
   var LAST_KEY = 'akini_msg_mb_last';
+  var PROCESSED_KEY = 'akini_msg_mb_processed'; /* 记录联系人已摇过的消息 ts，避免重复摇 */
 
   function rd(k, d){
     try{ var v = window.__wbRead ? window.__wbRead(k, d) : JSON.parse(localStorage.getItem(k)||'null'); return v==null?d:v; }
@@ -7489,6 +7492,7 @@ function it(t,e){
   }
 
   var busy=false;
+  function processedAll(){ var m=rd(PROCESSED_KEY,{}); return (m && typeof m==='object' && !Array.isArray(m)) ? m : {}; }
   function scan(){
     if(busy) return;
     var body=document.getElementById('chatBody');
@@ -7500,31 +7504,24 @@ function it(t,e){
       var rows=body.querySelectorAll('.msg-row[data-ts]');
       if(!rows.length) return;
       var all=mapAll(), mp=cidMap(all,id);
-      var la=lastAll();
-      var hasLast=Object.prototype.hasOwnProperty.call(la,id);
-      var last=hasLast ? (Number(la[id])||0) : 0;
-      var maxTs=last, changed=false;
-      if(!hasLast){
-        /* 第一次打开该会话：不补历史记录，只把基线定在当前最大时间戳 */
-        rows.forEach(function(r){ var ts=Number(r.getAttribute('data-ts'))||0; if(ts>maxTs) maxTs=ts; });
-        la[id]=maxTs; changed=true;
-      }else{
-        rows.forEach(function(r){
-          var ts=Number(r.getAttribute('data-ts'))||0;
-          if(!ts) return;
-          if(ts>maxTs) maxTs=ts;
-          if(mp[ts] || ts<=last) return;
-          var isTa = r.classList.contains('other') || r.classList.contains('ta');
-          if(!isTa || r.classList.contains('system')) return;
-          if(!r.querySelector('.bubble')) return;
-          var p=(window.AKR && window.AKR.getProb) ? window.AKR.getProb('miniBubble') : 0.3;
-          if(Math.random()>=p) return;
-          var t=pick();
-          if(t){ mp[ts]=t; changed=true; }
-        });
-        if(maxTs!==last){ la[id]=maxTs; changed=true; }
-      }
-      if(changed){ all[id]=mp; wr(MAP_KEY, all); wr(LAST_KEY, la); }
+      var pa=processedAll(), pp=cidMap(pa,id); /* pp: 本会话已被联系人摇过的 ts 集合 {ts:true} */
+      var changed=false, ppChanged=false;
+      rows.forEach(function(r){
+        var ts=r.getAttribute('data-ts');
+        if(!ts) return;
+        if(r.classList.contains('system')) return;
+        if(!r.querySelector('.bubble')) return;
+        /* 联系人每条消息只摇一次（不论我是否手动贴过），用 PROCESSED_KEY 记录 */
+        if(pp[ts]) return;
+        pp[ts]=true; ppChanged=true;
+        /* 按概率摇小气泡；摇中则覆盖已有（联系人后贴的覆盖我手动贴的，显示最新） */
+        var p=(window.AKR && window.AKR.getProb) ? window.AKR.getProb('miniBubble') : 0.3;
+        if(Math.random()>=p) return;
+        var t=pick();
+        if(t){ mp[ts]=t; changed=true; }
+      });
+      if(changed){ all[id]=mp; wr(MAP_KEY, all); }
+      if(ppChanged){ pa[id]=pp; wr(PROCESSED_KEY, pa); }
       rows.forEach(function(r){ apply(r, mp); });
     }catch(e){}
     finally{ busy=false; }
@@ -7642,10 +7639,24 @@ function it(t,e){
     var body=document.getElementById('chatBody');
     if(body && !body.__mbObs){
       body.__mbObs=1;
-      try{ new MutationObserver(function(){ scan(); }).observe(body, {childList:true}); }catch(e){}
+      try{
+        var _mbScanTimer=null;
+        new MutationObserver(function(){
+          /* 防抖：避免连续 DOM 变动触发大量 scan */
+          if(_mbScanTimer) clearTimeout(_mbScanTimer);
+          _mbScanTimer=setTimeout(scan, 300);
+        }).observe(body, {childList:true});
+      }catch(e){}
     }
     scan();
-    if(!window.__akiniMbTimer) window.__akiniMbTimer=setInterval(scan, 1200);
+    if(!window.__akiniMbTimer) window.__akiniMbTimer=setInterval(function(){
+      /* 聊天界面不可见时跳过扫描，减少后台开销 */
+      var cb=document.getElementById('chatBody');
+      if(!cb) return;
+      var app=document.getElementById('app-chat');
+      if(app && app.style.display==='none') return;
+      scan();
+    }, 2500);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();

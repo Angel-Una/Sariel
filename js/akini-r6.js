@@ -217,12 +217,14 @@
       var html = '<div class="msg-row other" data-ts="' + __akiniNextTs() + '">' +
         '<div class="msg-content-line">' +
         '<div class="avatar-col"><div class="msg-avatar">' + avHTML(taAv, 36) + '</div></div>' +
-        '<div class="bubble-wrap"><div class="bubble music-invite-bubble" onclick="window.__akiniAcceptMusicInvite &amp;&amp; window.__akiniAcceptMusicInvite()" style="background:#fff;border:1px solid #e5e5e5;border-radius:14px;padding:12px 14px;min-width:200px;max-width:260px;cursor:pointer;color:#1a1a1a;box-shadow:0 2px 8px rgba(0,0,0,.06);">' +
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' + avHTML(taAv, 28) +
-        '<div style="font-size:13px;font-weight:600;color:#1a1a1a;">' + taName.replace(/</g, '&lt;') + ' 邀请你一起听歌</div></div>' +
-        '<div style="font-size:12px;color:#888;">点击开始一起听 🎵</div>' +
+        '<div class="bubble-wrap"><div class="bubble music-invite-bubble" onclick="window.__akiniAcceptMusicInvite &amp;&amp; window.__akiniAcceptMusicInvite()" style="background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:12px 14px;min-width:210px;max-width:270px;cursor:pointer;color:#1a1a1a;box-shadow:0 2px 10px rgba(0,0,0,.06);">' +
+        '<div style="font-size:14px;color:#1a1a1a;line-height:1.5;margin-bottom:10px;">我的耳机分你一半，和我一起听歌吧~</div>' +
+        '<div style="display:flex;align-items:center;gap:10px;background:#f7f7f7;border-radius:12px;padding:8px 10px;">' +
+        '<div style="flex-shrink:0;">' + avHTML(taAv, 36) + '</div>' +
+        '<div style="font-size:14px;font-weight:600;color:#1a1a1a;">加入一起听</div>' +
+        '</div>' +
         '</div></div></div></div>';
-      window.__akiniAppendMessageHTML(cid, html, { lastMsg: taName + ' 邀请你一起听歌', lastSenderName: taName });
+      window.__akiniAppendMessageHTML(cid, html, { lastMsg: '邀请你一起听歌', lastSenderName: taName });
       try { window.__akiniToast && window.__akiniToast(taName + ' 邀请你一起听歌'); } catch (e) {}
       var body = $('chatBody');
       if (body) body.scrollTop = body.scrollHeight;
@@ -243,34 +245,97 @@
     } catch (e) {}
   };
 
-  /* ============ MUSIC END CARD ============ */
-  function sendMusicEndCard(myCount, taCount) {
+  /* ============ MUSIC END CARD (图三样式，由我发出，黑白款式) ============ */
+  function sendMusicEndCard(durationSec, songCount, myCount, taCount) {
     try {
       if (!window.akiniContacts) return;
       var cid = window.akiniContacts.getActiveChatId && window.akiniContacts.getActiveChatId();
       if (!cid) return;
+      var myAv = getMyAvatar();
+      var ta = getDefaultContact();
+      var taAv = ta ? (ta.avatar || '') : '';
+      var durText = fmtDuration(durationSec);
       var total = (myCount || 0) + (taCount || 0);
-      var html = '<div class="msg-row system music-end-row" style="display:flex;justify-content:center;margin:8px 0;">' +
-        '<div class="music-end-bubble" onclick="window.__akiniOpenMusicEndPopup &amp;&amp; window.__akiniOpenMusicEndPopup(' + (myCount || 0) + ',' + (taCount || 0) + ')" style="background:#fff;border:1px solid #e5e5e5;border-radius:14px;padding:14px 20px;min-width:220px;max-width:280px;text-align:center;cursor:pointer;color:#1a1a1a;box-shadow:0 2px 10px rgba(0,0,0,.08);font-size:13px;line-height:1.6;">' +
-        '<div style="font-weight:700;margin-bottom:4px;">一起听已结束</div>' +
-        '<div style="color:#666;">本次一起听共发送 ' + total + ' 条消息<br>你发了 ' + (myCount || 0) + ' 条 · TA 发了 ' + (taCount || 0) + ' 条</div>' +
-        '</div></div>';
-      window.__akiniAppendMessageHTML(cid, html, { lastMsg: '一起听已结束', lastSenderName: '系统' });
+      var dataAttr = 'data-dur="' + (durationSec || 0) + '" data-songs="' + (songCount || 0) + '" data-my="' + (myCount || 0) + '" data-ta="' + (taCount || 0) + '"';
+      var html = '<div class="msg-row me" data-ts="' + __akiniNextTs() + '">' +
+        '<div class="msg-content-line">' +
+        '<div class="bubble-wrap"><div class="bubble music-end-bubble" ' + dataAttr + ' onclick="window.__akiniOpenMusicEndPopup &amp;&amp; window.__akiniOpenMusicEndPopup(this)" style="background:#1a1a1a !important;border:1px solid #000 !important;border-radius:16px;padding:14px 16px;min-width:210px;max-width:270px;cursor:pointer;color:#fff !important;box-shadow:0 2px 10px rgba(0,0,0,.15);">' +
+        '<div style="font-size:13px;color:#ccc;margin-bottom:6px;">我们一起听了</div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+        '<div style="font-size:20px;font-weight:700;color:#fff;">' + durText + ' <span style="font-size:14px;color:#999;">›</span></div>' +
+        '<div style="display:flex;align-items:center;">' +
+        '<div style="z-index:2;">' + avHTML(myAv, 26) + '</div>' +
+        '<div style="margin-left:-10px;z-index:1;">' + avHTML(taAv, 26) + '</div>' +
+        '</div>' +
+        '</div>' +
+        '<div style="font-size:12px;color:#888;border-top:1px solid #333;padding-top:8px;">' + total + ' 条聊天记录</div>' +
+        '</div></div></div></div>';
+      window.__akiniAppendMessageHTML(cid, html, { lastMsg: '一起听已结束 · ' + durText, lastSenderName: getMyName() });
       var body = $('chatBody');
       if (body) body.scrollTop = body.scrollHeight;
     } catch (e) { console.warn('[r6] end card error', e); }
   }
 
-  window.__akiniOpenMusicEndPopup = function (myCount, taCount) {
+  window.__akiniOpenMusicEndPopup = function (el) {
     var ov = $('musicEndPopup');
     if (!ov) return;
-    var total = (myCount || 0) + (taCount || 0);
-    var myEl = $('musicEndPopupMyCount');
-    var taEl = $('musicEndPopupTaCount');
-    var totalEl = $('musicEndPopupTotal');
-    if (myEl) myEl.textContent = myCount || 0;
-    if (taEl) taEl.textContent = taCount || 0;
-    if (totalEl) totalEl.textContent = total;
+    var dur = 0, songs = 0, myCount = 0, taCount = 0;
+    if (el && el.getAttribute) {
+      dur = parseFloat(el.getAttribute('data-dur') || '0') || 0;
+      songs = parseInt(el.getAttribute('data-songs') || '0', 10) || 0;
+      myCount = parseInt(el.getAttribute('data-my') || '0', 10) || 0;
+      taCount = parseInt(el.getAttribute('data-ta') || '0', 10) || 0;
+    }
+    var total = myCount + taCount;
+    var myAv = getMyAvatar();
+    var ta = getDefaultContact();
+    var taAv = ta ? (ta.avatar || '') : '';
+
+    // 累计数据
+    var hist = getMusicHistory();
+    var cumSec = 0, cumSongs = 0;
+    hist.forEach(function (it) { cumSec += it.duration || 0; cumSongs += it.songCount || 0; });
+
+    // 日期
+    var now = new Date();
+    var dateStr = now.getFullYear() + '.' + String(now.getMonth() + 1).padStart(2, '0') + '.' + String(now.getDate()).padStart(2, '0');
+
+    var body = $('musicEndPopupBody');
+    if (body) {
+      body.innerHTML =
+        '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><span style="font-size:12px;color:#999;">' + dateStr + '</span></div>' +
+        '<div style="display:flex;justify-content:center;margin-bottom:18px;">' +
+        '<div style="display:flex;align-items:center;">' +
+        '<div style="z-index:2;">' + avHTML(myAv, 56) + '</div>' +
+        '<div style="margin-left:-18px;z-index:1;">' + avHTML(taAv, 56) + '</div>' +
+        '</div></div>' +
+        '<div style="background:#fff;border-radius:16px;padding:18px 16px;box-shadow:0 2px 12px rgba(0,0,0,.08);">' +
+        '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;color:#999;font-size:13px;">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
+        '<span>我们相距 — 公里</span>' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
+        '</div>' +
+        '<div style="display:flex;gap:12px;margin-bottom:16px;">' +
+        '<div style="flex:1;text-align:center;">' +
+        '<div style="font-size:12px;color:#999;margin-bottom:4px;">本次一起听了</div>' +
+        '<div style="font-size:22px;font-weight:700;color:#1a1a1a;">' + songs + '<span style="font-size:13px;font-weight:400;color:#666;margin-left:2px;">首歌曲</span></div>' +
+        '</div>' +
+        '<div style="flex:1;text-align:center;">' +
+        '<div style="font-size:12px;color:#999;margin-bottom:4px;">本次陪伴彼此</div>' +
+        '<div style="font-size:22px;font-weight:700;color:#1a1a1a;line-height:1.2;">' + fmtDuration(dur) + '</div>' +
+        '</div>' +
+        '</div>' +
+        '<div style="text-align:center;font-size:12px;color:#999;padding-top:12px;border-top:1px solid #f0f0f0;">累计 ' + cumSongs + ' 首歌曲、' + fmtDuration(cumSec) + '</div>' +
+        '</div>' +
+        '<div style="margin-top:14px;background:#f5f5f5;border-radius:14px;padding:16px;display:flex;align-items:center;justify-content:space-between;">' +
+        '<div><div style="font-size:12px;color:#999;">互发消息</div><div style="font-size:24px;font-weight:700;color:#1a1a1a;margin-top:2px;">' + total + '<span style="font-size:13px;font-weight:400;color:#666;margin-left:2px;">条</span></div></div>' +
+        '<div style="display:flex;gap:10px;font-size:11px;color:#666;">' +
+        '<div style="text-align:center;"><div style="font-size:16px;font-weight:600;color:#1a1a1a;">' + myCount + '</div><div>我</div></div>' +
+        '<div style="width:1px;background:#ddd;"></div>' +
+        '<div style="text-align:center;"><div style="font-size:16px;font-weight:600;color:#1a1a1a;">' + taCount + '</div><div>TA</div></div>' +
+        '</div>' +
+        '</div>';
+    }
     ov.style.display = 'flex';
   };
   function closeMusicEndPopup() { var ov = $('musicEndPopup'); if (ov) ov.style.display = 'none'; }
@@ -291,8 +356,9 @@
   }
   function endMusicSessionTracking() {
     stopContactSkip();
+    if (!_musicSessionStart) { try { localStorage.setItem('akini_music_listening_active', '0'); } catch (e) {} return; }
     var duration = Math.floor((Date.now() - _musicSessionStart) / 1000);
-    if (duration > 5) {
+    if (duration >= 1) {
       var ta = getDefaultContact();
       addMusicHistory({
         startTs: _musicSessionStart,
@@ -303,7 +369,7 @@
         taName: ta ? (ta.name || 'TA') : 'TA',
         taAvatar: ta ? (ta.avatar || '') : ''
       });
-      sendMusicEndCard(_musicSessionMyMsgs, _musicSessionTaMsgs);
+      sendMusicEndCard(duration, _musicSessionSongCount, _musicSessionMyMsgs, _musicSessionTaMsgs);
     }
     _musicSessionStart = 0;
     try { localStorage.setItem('akini_music_listening_active', '0'); } catch (e) {}
@@ -370,18 +436,21 @@
       return;
     }
     list.innerHTML = arr.map(function (it) {
+      var durSec = Math.floor((it.duration || 0) / 1000);
+      var sub = it.summary || it.content || '陪伴';
+      if (/^共\d+条消息$/.test(sub)) sub = it.content || '陪伴';
       return '<div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #f0f0f0;">' +
         '<div style="flex-shrink:0;text-align:center;">' +
         avHTML(it.avatar || it.taAvatar || '', 44) +
         '<div style="font-size:10px;color:#999;margin-top:4px;white-space:nowrap;">' + fmtDate(it.startTs).split(' ')[0] + '</div>' +
         '</div>' +
         '<div style="flex:1;min-width:0;">' +
-        '<div style="font-size:14px;font-weight:600;color:#1a1a1a;">' + String(it.name || it.taName || 'TA').replace(/</g, '&lt;') +
+        '<div style="font-size:14px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + String(it.name || it.taName || 'TA').replace(/</g, '&lt;') +
         ' · ' + String(it.content || '陪伴').replace(/</g, '&lt;') + '</div>' +
-        '<div style="font-size:11px;color:#999;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (it.summary || ('共' + (it.msgCount || 0) + '条消息')) + '</div>' +
+        '<div style="font-size:11px;color:#999;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + String(sub).replace(/</g, '&lt;') + '</div>' +
         '</div>' +
         '<div style="text-align:right;flex-shrink:0;">' +
-        '<div style="font-size:13px;font-weight:600;color:#1a1a1a;">' + fmtDuration(it.duration) + '</div>' +
+        '<div style="font-size:13px;font-weight:600;color:#1a1a1a;">' + fmtDuration(durSec) + '</div>' +
         '</div>' +
         '</div>';
     }).join('');
@@ -393,15 +462,23 @@
   }
   function closeCompanionHistory() { var ov = $('companionHistoryOverlay'); if (ov) ov.style.display = 'none'; }
 
-  /* ============ PROBABILITY SETTINGS ============ */
+  /* ============ PROBABILITY SETTINGS (统一到设置页自定义概率模块) ============ */
   function openProbSettings() {
-    var ov = $('probSettingsOverlay');
-    if (!ov) return;
-    var inv = $('probInviteInput');
-    var sk = $('probSkipInput');
-    if (inv) inv.value = getInviteProb();
-    if (sk) sk.value = getSkipProb();
-    ov.style.display = 'flex';
+    try {
+      // 关闭音乐相关界面，打开设置页概率模块
+      var app = $('app-music');
+      if (app) { app.style.display = 'none'; app.classList.remove('show'); }
+      var menu = $('musicMenuPanel');
+      if (menu) menu.style.display = 'none';
+      var sa = $('settingsArea');
+      if (sa) sa.style.display = 'flex';
+      if (typeof window.__openProbArea === 'function') {
+        window.__openProbArea();
+      } else {
+        var pa = $('akiniProbArea');
+        if (pa) pa.style.display = 'flex';
+      }
+    } catch (e) {}
   }
   function closeProbSettings() { var ov = $('probSettingsOverlay'); if (ov) ov.style.display = 'none'; }
 
@@ -536,6 +613,22 @@
       }, true);
     }
 
+    // 包装 _akiniMusicGoHome：任何退出音乐的路径都先结束会话
+    try {
+      if (typeof window._akiniMusicGoHome === 'function' && !window._akiniMusicGoHome.__r6wrapped) {
+        var origGoHome = window._akiniMusicGoHome;
+        window._akiniMusicGoHome = function () {
+          try {
+            var active = false;
+            try { active = '1' === localStorage.getItem('akini_music_listening_active'); } catch (e) {}
+            if (active) endMusicSessionTracking();
+          } catch (e) {}
+          return origGoHome.apply(this, arguments);
+        };
+        window._akiniMusicGoHome.__r6wrapped = true;
+      }
+    } catch (e) {}
+
     // 概率设置
     var probSave = $('probSettingsSave');
     if (probSave) probSave.addEventListener('click', function () {
@@ -563,4 +656,6 @@
 
   window.__akiniShowMusicHome = showMusicHome;
   window.__akiniShowCompanionHome = showCompanionHome;
+  window.__akiniOpenCompanionHistory = openCompanionHistory;
+  window.__akiniOpenMusicHistory = openMusicHistory;
 })();
