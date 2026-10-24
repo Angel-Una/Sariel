@@ -216,14 +216,16 @@
       var taAv = ta ? (ta.avatar || '') : '';
       var html = '<div class="msg-row other" data-ts="' + __akiniNextTs() + '">' +
         '<div class="msg-content-line">' +
-        '<div class="avatar-col"><div class="msg-avatar">' + avHTML(taAv, 36) + '</div></div>' +
-        '<div class="bubble-wrap"><div class="bubble music-invite-bubble" onclick="window.__akiniAcceptMusicInvite &amp;&amp; window.__akiniAcceptMusicInvite()" style="background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:12px 14px;min-width:210px;max-width:270px;cursor:pointer;color:#1a1a1a;box-shadow:0 2px 10px rgba(0,0,0,.06);">' +
+        '<div class="msg-avatar" data-sender-name="' + String(taName).replace(/"/g, '&quot;') + '">' + avHTML(taAv, 36) + '</div>' +
+        '<div class="bubble music-invite-bubble" onclick="window.__akiniOpenMusicInvitePopup &amp;&amp; window.__akiniOpenMusicInvitePopup()" style="background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:12px 14px;min-width:220px;max-width:270px;cursor:pointer;color:#1a1a1a;box-shadow:0 2px 10px rgba(0,0,0,.06);">' +
         '<div style="font-size:14px;color:#1a1a1a;line-height:1.5;margin-bottom:10px;">我的耳机分你一半，和我一起听歌吧~</div>' +
         '<div style="display:flex;align-items:center;gap:10px;background:#f7f7f7;border-radius:12px;padding:8px 10px;">' +
         '<div style="flex-shrink:0;">' + avHTML(taAv, 36) + '</div>' +
         '<div style="font-size:14px;font-weight:600;color:#1a1a1a;">加入一起听</div>' +
+        '<div style="margin-left:auto;font-size:12px;color:#999;">点击查看 ›</div>' +
         '</div>' +
-        '</div></div></div></div>';
+        '</div>' +
+        '</div></div>';
       window.__akiniAppendMessageHTML(cid, html, { lastMsg: '邀请你一起听歌', lastSenderName: taName });
       try { window.__akiniToast && window.__akiniToast(taName + ' 邀请你一起听歌'); } catch (e) {}
       var body = $('chatBody');
@@ -233,6 +235,7 @@
 
   window.__akiniAcceptMusicInvite = function () {
     try {
+      closeMusicInvitePopup();
       if (window.navTo) window.navTo('music');
       else { var app = $('app-music'); if (app) { app.style.display = 'flex'; app.classList.add('show'); } }
       startMusicSessionTracking();
@@ -245,7 +248,56 @@
     } catch (e) {}
   };
 
-  /* ============ MUSIC END CARD (图三样式，由我发出，黑白款式) ============ */
+  /* ============ MUSIC INVITE POPUP (黑白, 叉=拒绝 对号=同意) ============ */
+  window.__akiniOpenMusicInvitePopup = function () {
+    var ov = $('musicInvitePopup');
+    if (!ov) return;
+    var ta = getDefaultContact();
+    var taName = ta ? (ta.name || 'TA') : 'TA';
+    var taAv = ta ? (ta.avatar || '') : '';
+    var body = $('musicInvitePopupBody');
+    if (body) {
+      body.innerHTML =
+        '<div style="text-align:center;margin-bottom:14px;">' +
+        '<div style="width:64px;height:64px;border-radius:50%;background:#f0f0f0;overflow:hidden;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;">' +
+        (taAv && /^(data:|https?:|blob:|\/)/.test(taAv)
+          ? '<img src="' + taAv + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>'
+          : '<span style="font-size:28px;">' + (taAv || '🙂') + '</span>') +
+        '</div>' +
+        '<div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">' + String(taName).replace(/</g, '&lt;') + '</div>' +
+        '<div style="font-size:13px;color:#666;line-height:1.5;">邀请你一起听歌<br>耳机分你一半 🎧</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:14px;justify-content:center;">' +
+        '<button id="musicInviteRejectBtn" style="width:56px;height:56px;border-radius:50%;border:1.5px solid #1a1a1a;background:#fff;color:#1a1a1a;font-size:24px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;" type="button">✕</button>' +
+        '<button id="musicInviteAcceptBtn" style="width:56px;height:56px;border-radius:50%;border:none;background:#1a1a1a;color:#fff;font-size:24px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;" type="button">✓</button>' +
+        '</div>';
+    }
+    ov.style.display = 'flex';
+    // bind buttons
+    setTimeout(function () {
+      var rj = $('musicInviteRejectBtn');
+      var ac = $('musicInviteAcceptBtn');
+      if (rj) rj.onclick = function () { rejectMusicInvite(); };
+      if (ac) ac.onclick = function () { window.__akiniAcceptMusicInvite(); };
+    }, 0);
+  };
+  function closeMusicInvitePopup() { var ov = $('musicInvitePopup'); if (ov) ov.style.display = 'none'; }
+  function rejectMusicInvite() {
+    closeMusicInvitePopup();
+    try {
+      var ta = getDefaultContact();
+      var taName = ta ? (ta.name || 'TA') : 'TA';
+      var myName = getMyName();
+      var text = String(taName).replace(/</g, '&lt;') + ' 拒绝了 ' + String(myName).replace(/</g, '&lt;') + ' 的一起听邀请';
+      var sysHtml = '<div class="msg-row system" data-ts="' + __akiniNextTs() + '">' +
+        '<div class="msg-content-line"><div class="bubble-wrap"><div class="bubble">' + text + '</div></div></div>' +
+        '</div>';
+      var cid = window.akiniContacts && window.akiniContacts.getActiveChatId && window.akiniContacts.getActiveChatId();
+      if (cid) window.__akiniAppendMessageHTML(cid, sysHtml, { lastMsg: text });
+    } catch (e) {}
+  }
+
+  /* ============ MUSIC END CARD (由我发出，黑白款式，带头像/时间戳/已读) ============ */
   function sendMusicEndCard(durationSec, songCount, myCount, taCount) {
     try {
       if (!window.akiniContacts) return;
@@ -254,22 +306,32 @@
       var myAv = getMyAvatar();
       var ta = getDefaultContact();
       var taAv = ta ? (ta.avatar || '') : '';
-      var durText = fmtDuration(durationSec);
+      var taName = ta ? (ta.name || 'TA') : 'TA';
+      var durText = fmtDurationFull(durationSec);
       var total = (myCount || 0) + (taCount || 0);
       var dataAttr = 'data-dur="' + (durationSec || 0) + '" data-songs="' + (songCount || 0) + '" data-my="' + (myCount || 0) + '" data-ta="' + (taCount || 0) + '"';
       var html = '<div class="msg-row me" data-ts="' + __akiniNextTs() + '">' +
         '<div class="msg-content-line">' +
-        '<div class="bubble-wrap"><div class="bubble music-end-bubble" ' + dataAttr + ' onclick="window.__akiniOpenMusicEndPopup &amp;&amp; window.__akiniOpenMusicEndPopup(this)" style="background:#1a1a1a !important;border:1px solid #000 !important;border-radius:16px;padding:14px 16px;min-width:210px;max-width:270px;cursor:pointer;color:#fff !important;box-shadow:0 2px 10px rgba(0,0,0,.15);">' +
-        '<div style="font-size:13px;color:#ccc;margin-bottom:6px;">我们一起听了</div>' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
-        '<div style="font-size:20px;font-weight:700;color:#fff;">' + durText + ' <span style="font-size:14px;color:#999;">›</span></div>' +
+        '<div class="bubble music-end-bubble" ' + dataAttr + ' onclick="window.__akiniOpenMusicEndPopup &amp;&amp; window.__akiniOpenMusicEndPopup(this)" style="background:#1a1a1a !important;border:1px solid #000 !important;border-radius:16px;padding:14px 16px;min-width:230px;max-width:280px;cursor:pointer;color:#fff !important;box-shadow:0 2px 10px rgba(0,0,0,.15);">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<div style="font-size:13px;color:#ccc;">一起听结束</div>' +
+        '</div>' +
         '<div style="display:flex;align-items:center;">' +
-        '<div style="z-index:2;">' + avHTML(myAv, 26) + '</div>' +
-        '<div style="margin-left:-10px;z-index:1;">' + avHTML(taAv, 26) + '</div>' +
+        '<div style="z-index:2;">' + avHTML(myAv, 24) + '</div>' +
+        '<div style="margin-left:-10px;z-index:1;">' + avHTML(taAv, 24) + '</div>' +
         '</div>' +
         '</div>' +
-        '<div style="font-size:12px;color:#888;border-top:1px solid #333;padding-top:8px;">' + total + ' 条聊天记录</div>' +
-        '</div></div></div></div>';
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+        '<div><div style="font-size:12px;color:#888;margin-bottom:2px;">陪伴时长</div><div style="font-size:20px;font-weight:700;color:#fff;line-height:1.2;">' + durText + '</div></div>' +
+        '<div style="text-align:right;"><div style="font-size:12px;color:#888;margin-bottom:2px;">听过</div><div style="font-size:20px;font-weight:700;color:#fff;line-height:1.2;">' + (songCount || 0) + '<span style="font-size:12px;color:#999;font-weight:400;margin-left:2px;">首</span></div></div>' +
+        '</div>' +
+        '<div style="font-size:12px;color:#888;border-top:1px solid #333;padding-top:8px;display:flex;justify-content:space-between;align-items:center;">' +
+        '<span>互发 ' + total + ' 条消息</span><span style="color:#666;">点击查看详情 ›</span>' +
+        '</div>' +
+        '</div>' +
+        '<div class="msg-avatar" data-sender-name="' + String(getMyName()).replace(/"/g, '&quot;') + '">' + avHTML(myAv, 36) + '</div>' +
+        '</div></div>';
       window.__akiniAppendMessageHTML(cid, html, { lastMsg: '一起听已结束 · ' + durText, lastSenderName: getMyName() });
       var body = $('chatBody');
       if (body) body.scrollTop = body.scrollHeight;
@@ -312,8 +374,7 @@
         '<div style="background:#fff;border-radius:16px;padding:18px 16px;box-shadow:0 2px 12px rgba(0,0,0,.08);">' +
         '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;color:#999;font-size:13px;">' +
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
-        '<span>我们相距 — 公里</span>' +
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
+        '<span>TA 就在你身边</span>' +
         '</div>' +
         '<div style="display:flex;gap:12px;margin-bottom:16px;">' +
         '<div style="flex:1;text-align:center;">' +
@@ -322,7 +383,7 @@
         '</div>' +
         '<div style="flex:1;text-align:center;">' +
         '<div style="font-size:12px;color:#999;margin-bottom:4px;">本次陪伴彼此</div>' +
-        '<div style="font-size:22px;font-weight:700;color:#1a1a1a;line-height:1.2;">' + fmtDuration(dur) + '</div>' +
+        '<div style="font-size:22px;font-weight:700;color:#1a1a1a;line-height:1.2;">' + fmtDurationFull(dur) + '</div>' +
         '</div>' +
         '</div>' +
         '<div style="text-align:center;font-size:12px;color:#999;padding-top:12px;border-top:1px solid #f0f0f0;">累计 ' + cumSongs + ' 首歌曲、' + fmtDuration(cumSec) + '</div>' +
@@ -427,6 +488,13 @@
     if (arr.length > 100) arr = arr.slice(0, 100);
     saveCompanionHistory(arr);
   }
+  function fmtDurationFull(sec) {
+    sec = Math.max(0, Math.floor(sec || 0));
+    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    if (h > 0) return h + '小时' + m + '分钟' + s + '秒';
+    if (m > 0) return m + '分钟' + s + '秒';
+    return s + '秒';
+  }
   function renderCompanionHistory() {
     var list = $('companionHistoryList');
     if (!list) return;
@@ -439,18 +507,19 @@
       var durSec = Math.floor((it.duration || 0) / 1000);
       var sub = it.summary || it.content || '陪伴';
       if (/^共\d+条消息$/.test(sub)) sub = it.content || '陪伴';
-      return '<div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #f0f0f0;">' +
-        '<div style="flex-shrink:0;text-align:center;">' +
+      return '<div style="display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid #f0f0f0;">' +
+        '<div style="flex-shrink:0;width:44px;text-align:center;">' +
         avHTML(it.avatar || it.taAvatar || '', 44) +
         '<div style="font-size:10px;color:#999;margin-top:4px;white-space:nowrap;">' + fmtDate(it.startTs).split(' ')[0] + '</div>' +
         '</div>' +
-        '<div style="flex:1;min-width:0;">' +
-        '<div style="font-size:14px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + String(it.name || it.taName || 'TA').replace(/</g, '&lt;') +
+        '<div style="flex:1;min-width:0;text-align:left;">' +
+        '<div style="font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + String(it.name || it.taName || 'TA').replace(/</g, '&lt;') +
         ' · ' + String(it.content || '陪伴').replace(/</g, '&lt;') + '</div>' +
         '<div style="font-size:11px;color:#999;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + String(sub).replace(/</g, '&lt;') + '</div>' +
         '</div>' +
-        '<div style="text-align:right;flex-shrink:0;">' +
-        '<div style="font-size:13px;font-weight:600;color:#1a1a1a;">' + fmtDuration(durSec) + '</div>' +
+        '<div style="flex-shrink:0;text-align:right;">' +
+        '<div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;">' + fmtDurationFull(durSec) + '</div>' +
+        '<div style="font-size:11px;color:#999;margin-top:3px;">共' + (it.msgCount || 0) + '条</div>' +
         '</div>' +
         '</div>';
     }).join('');
@@ -550,6 +619,10 @@
     var endOverlay = $('musicEndPopup');
     if (endOverlay) endOverlay.addEventListener('click', function (e) { if (e.target === endOverlay) closeMusicEndPopup(); });
 
+    // Music invite popup
+    var inviteOverlay = $('musicInvitePopup');
+    if (inviteOverlay) inviteOverlay.addEventListener('click', function (e) { if (e.target === inviteOverlay) closeMusicInvitePopup(); });
+
     // Companion home
     var presets = $('companionHomePresets');
     if (presets) {
@@ -626,6 +699,40 @@
           return origGoHome.apply(this, arguments);
         };
         window._akiniMusicGoHome.__r6wrapped = true;
+      }
+    } catch (e) {}
+
+    // 包装 _exitListenTogether：退出一起听时结束会话、回到聊天界面显示结束卡片、不复活播放器
+    try {
+      if (typeof window._exitListenTogether === 'function' && !window._exitListenTogether.__r6wrapped) {
+        var origExit = window._exitListenTogether;
+        window._exitListenTogether = function () {
+          try {
+            var active = false;
+            try { active = '1' === localStorage.getItem('akini_music_listening_active'); } catch (e) {}
+            if (active) endMusicSessionTracking();
+          } catch (e) {}
+          try { origExit.apply(this, arguments); } catch (e) {}
+          // 隐藏播放器与联系人选择器，回到聊天界面（让结束卡片立刻可见）
+          setTimeout(function () {
+            try {
+              var app = $('app-music');
+              if (app) { app.style.display = 'none'; app.classList.remove('show'); }
+              var picker = $('musicContactPicker');
+              if (picker) { picker.style.display = 'none'; picker.classList.remove('show'); }
+            } catch (e) {}
+            // 回到当前聊天
+            try {
+              var cid = window.akiniContacts && window.akiniContacts.getActiveChatId && window.akiniContacts.getActiveChatId();
+              if (cid && typeof window.openChat === 'function') {
+                window.openChat(cid);
+              } else if (typeof window.navTo === 'function') {
+                window.navTo('chat-list');
+              }
+            } catch (e) {}
+          }, 80);
+        };
+        window._exitListenTogether.__r6wrapped = true;
       }
     } catch (e) {}
 
